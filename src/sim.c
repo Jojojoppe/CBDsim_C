@@ -50,6 +50,8 @@ void sim_deinit(sim_state_t * state){
 
     d_array_deinit(&state->values);
     d_array_deinit(&state->eval_order);
+
+    free(state->watchlist);
 }
 
 int sim_add_name(const char * name, sim_state_t * state){
@@ -122,7 +124,6 @@ void _sim_evaluate(int i, sim_state_t * state, int * block_evaluated, int * bloc
 
 void sim_compile(sim_state_t * state){
 
-    fputs("\033c", stdout);
     dbg_sim_printall(state);
 
     // Map signals to blocks
@@ -151,8 +152,6 @@ void sim_compile(sim_state_t * state){
 
     // Find block order
     int * block_evaluated = calloc(state->cbd_blocks.filled_size, sizeof(int));
-    d_array_t order;
-    D_ARRAY_INIT(int, &order);
     // Start from all chain breaking blocks and traverse down
     for(int i=0; i<state->cbd_blocks.filled_size; i++){
         cbd_block_t * block = d_array_at(&state->cbd_blocks, i);
@@ -166,6 +165,7 @@ void sim_compile(sim_state_t * state){
     }
 
     // TODO check for any non chain breaking blocks
+    // Loop over all non-evaluated blocks, traverse to top and evaluate
 
     free(block_evaluated);
 
@@ -196,21 +196,19 @@ void sim_run(double runtime, sim_state_t * state){
             FILE* f = popen("gnuplot", "w");
             cbd_signal_t * sig = (cbd_signal_t*)d_array_at(&state->cbd_signals, i);
             char * name = *(char**)d_array_at(&state->names, sig->name);
+            fprintf(f, "set out\nset term dumb\n");
             fprintf(f, "plot '-' with lines title '%s'\n", name);
             d_array_insert(&gnuplot, &f);
         }
     }
 
     while(*time<=runtime){
-        fputs("\033c", stdout);
 
         for(int i=0; i<state->eval_order.filled_size; i++){
             int b_i = *(int*)d_array_at(&state->eval_order, i);
             cbd_block_t * block = d_array_at(&state->cbd_blocks, b_i);
             block->eval(block, state);
         }
-
-        dbg_sim_printall(state);
 
         int j = 0;
         for(int i=0; i<state->cbd_signals.filled_size; i++){
@@ -229,16 +227,7 @@ void sim_run(double runtime, sim_state_t * state){
             FILE* f = ((FILE**)gnuplot.begin)[j++];
             fprintf(f, "e\n");
             fflush(f);
-        }
-    }
-
-    printf("Press ENTER to continue...\n");
-    getchar();
-
-    j = 0;
-    for(int i=0; i<state->cbd_signals.filled_size; i++){
-        if(state->watchlist[i]){
-            FILE* f = ((FILE**)gnuplot.begin)[j++];
+            usleep(50000);
             fclose(f);
         }
     }

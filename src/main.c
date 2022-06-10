@@ -17,21 +17,36 @@ int main(int argc, char ** argv){
     // Signals
     int signal_e1 = cbd_signal_add("e1", &state);
     int signal_e2 = cbd_signal_add("e2", &state);
+    int signal_e3 = cbd_signal_add("e3", &state);
+    int signal_q2 = cbd_signal_add("q2", &state);
+    int signal_f = cbd_signal_add("f", &state);
 
     // Paramters
-    int param_sin_A = cbd_param_add("sin_A", 1.0, &state);
-    int param_sin_f = cbd_param_add("sin_f", 1.0, &state);
-    int param_int1_init = cbd_param_add("int1_init", 0.0, &state);
+    int param_step_A = cbd_param_add("step_A", 1.0, &state);
+    int param_step_t = cbd_param_add("step_t", 1.0, &state);
+    int param_C_K = cbd_param_add("C_K", 1/2.0, &state);
+    int param_R_K = cbd_param_add("R_K", 1.0, &state);
+    int param_intC_init = cbd_param_add("intC_init", 0.0, &state);
 
     // Blocks
-    int block_src_sin = cbd_blocks_src_sin(signal_e1, param_sin_A, param_sin_f, "src_sin", &state);
-    int block_int1 = cbd_block_standard_int_trap(signal_e1, signal_e2, param_int1_init, "int1", &state);
-
+    int block_step = cbd_blocks_src_step(signal_e1, param_step_A, param_step_t, "step", &state);
+    int block_gainC = cbd_block_standard_gain(signal_q2, signal_e2, param_C_K, "gainC", &state);
+    int block_gainR = cbd_block_standard_gain(signal_e3, signal_f, param_R_K, "gainR", &state);
+    int block_intC = cbd_block_standard_int_euler(signal_f, signal_q2, param_intC_init, "intC", &state);
+    int block_add1; {
+        const int pinp[1] = {signal_e1};
+        const int pinm[1] = {signal_e2};
+        block_add1 = cbd_block_standard_plusmin(pinp, 1, pinm, 1, signal_e3, "add1", &state);
+    }
     // --------------------
 
     sim_compile(&state);
 
     sim_watch_signal(signal_e1, &state);
+    sim_watch_signal(signal_e2, &state);
+    sim_watch_signal(signal_e3, &state);
+    sim_watch_signal(signal_f, &state);
+    
     sim_run(10.0, &state);
     
     sim_deinit(&state);
