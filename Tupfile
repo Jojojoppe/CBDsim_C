@@ -1,0 +1,15 @@
+include_rules
+
+src_c = src/dynamic_array.c
+src_c += src/cbd/signal.c src/cbd/block.c src/cbd/param.c
+src_c += src/cbd/blocks/src/sin.c
+src_c += src/sim.c src/main.c
+
+CFLAGS += -g
+LDFLAGS += -g
+LDLIBS += -lm
+
+: foreach $(src_c) |> !cc |> out/%B.o
+: out/*.o |> !ld |> out/main
+
+.gitignore
