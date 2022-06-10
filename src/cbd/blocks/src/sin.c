@@ -3,6 +3,7 @@
 #include "../../../sim.h"
 
 #include <math.h>
+#include <stdlib.h>
 
 typedef struct{
     double * time;
@@ -30,15 +31,15 @@ void eval_sin(cbd_block_t * block, sim_state_t * state){
         cache->time = d_array_at(&state->values, s_t->value);
         cbd_signal_t * s_out0 = d_array_at(&state->cbd_signals, out);
         cache->out = d_array_at(&state->values, s_out0->value);
-        cbd_param_t * p_0 = d_array_at(&state->cbd_signals, A);
+        cbd_param_t * p_0 = d_array_at(&state->cbd_params, A);
         cache->A = d_array_at(&state->values, p_0->value);
-        cbd_param_t * p_1 = d_array_at(&state->cbd_signals, f);
+        cbd_param_t * p_1 = d_array_at(&state->cbd_params, f);
         cache->f = d_array_at(&state->values, p_1->value);
 
         block->cache = cache;
     }
     eval_state_sin_t * c = (eval_state_sin_t*)block->cache;
-    *c->out = *c->A * sin(2*M_PI* *c->f * *c->time);
+    *c->out = (*c->A) * sin(2*M_PI* (*c->f) * (*c->time));
 }
 
 int cbd_blocks_src_sin(int out, int A, int f, const char * name, sim_state_t * state){

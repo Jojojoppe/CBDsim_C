@@ -26,6 +26,12 @@ void eval_plusmin(cbd_block_t * block, sim_state_t * state){
         cache->in = (double**)(cache+1);
         cache->inp_n = *(int*)d_array_at(params, 0);
         cache->inm_n = *(int*)d_array_at(params, 1);
+
+        for(int i=0; i<pin->filled_size; i++){
+            int in = ((int*)pin->begin)[i];
+            cbd_signal_t * s_in = d_array_at(&state->cbd_signals, in);
+            cache->in[i] = d_array_at(&state->values, s_in->value);
+        }
         
         int out = ((int*)pout->begin)[0];
         cbd_signal_t * s_out0 = d_array_at(&state->cbd_signals, out);
@@ -46,7 +52,7 @@ int cbd_block_standard_plusmin(const int * inp, int inp_n, const int * inm, int 
     for(int i=inp_n; i<inp_n+inm_n; i++) pin[i] = inm[i-inp_n];
     const int params[2] = {inp_n, inm_n};
     const int pout[1] = {out};
-    int block = cbd_block_add(name, pin, inp_n+inm_n, pout, 1, params, 1, eval_plusmin, 0, state);
+    int block = cbd_block_add(name, pin, inp_n+inm_n, pout, 1, params, 2, eval_plusmin, 0, state);
     free(pin);
     return block;
 }
