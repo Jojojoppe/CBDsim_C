@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-int cbd_block_add(const char * name, const int * ports_in, int ports_in_n, const int * ports_out, int ports_out_n, const int * params, int params_n, void (*eval)(cbd_block_t *, sim_state_t *), sim_state_t * state){
+int cbd_block_add(const char * name, const int * ports_in, int ports_in_n, const int * ports_out, int ports_out_n, const int * params, int params_n, void (*eval)(cbd_block_t *, sim_state_t *), int depchain_break, sim_state_t * state){
     // Add name to the simulation state
     int n_index = sim_add_name(name, state);
     // Add ports to the simulation state
@@ -19,7 +19,8 @@ int cbd_block_add(const char * name, const int * ports_in, int ports_in_n, const
         pa_index,
         n_index,
         NULL,
-        eval
+        eval,
+        depchain_break,
     };
     d_array_insert(&state->cbd_blocks, &block);
     return state->cbd_blocks.filled_size-1;

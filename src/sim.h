@@ -18,14 +18,20 @@ typedef struct sim_state_s {
     d_array_t cbd_blocks;       // cbd_blocks_t[]
     // ------
 
+    int time, timestep;
+
+    d_array_t eval_order;
+
 } sim_state_t;
 
-void sim_init(sim_state_t * state);
+void sim_init(sim_state_t * state, double timestep);
 void sim_deinit(sim_state_t * state);
 
 int sim_add_name(const char * name, sim_state_t * state);
 int sim_add_value(const double v, sim_state_t * state);
 int sim_add_array(const int * vals, int vals_n, sim_state_t * state);
+
+void sim_compile(sim_state_t * state);
 
 void dbg_sim_printall(sim_state_t * state);
 

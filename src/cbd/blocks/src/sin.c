@@ -1,3 +1,4 @@
+#include "src.h"
 #include "../../block.h"
 #include "../../../sim.h"
 
@@ -13,16 +14,17 @@ typedef struct{
 void eval_sin(cbd_block_t * block, sim_state_t * state){
     if(!block->cache){
         // Create simulation cache
+
+        d_array_t * pin = (d_array_t*)d_array_at(&state->arrays, block->ports_in);
+        d_array_t * pout = (d_array_t*)d_array_at(&state->arrays, block->ports_out);
+        d_array_t * params = (d_array_t*)d_array_at(&state->arrays, block->params);
+
         eval_state_sin_t * cache = malloc(sizeof(eval_state_sin_t));
 
-        int * pin = (int*)d_array_at(&state->arrays, block->ports_in);
-        int * pout = (int*)d_array_at(&state->arrays, block->ports_out);
-        int * params = (int*)d_array_at(&state->arrays, block->params);
-
-        int time = pin[0];
-        int out = pout[0];
-        int A = params[0];
-        int f = params[1];
+        int time = ((int*)pin->begin)[0];
+        int out = ((int*)pout->begin)[0];
+        int A = ((int*)params->begin)[0];
+        int f = ((int*)params->begin)[1];
         
         cbd_signal_t * s_t = d_array_at(&state->cbd_signals, time);
         cache->time = d_array_at(&state->values, s_t->value);
@@ -39,11 +41,11 @@ void eval_sin(cbd_block_t * block, sim_state_t * state){
     *c->out = *c->A * sin(2*M_PI* *c->f * *c->time);
 }
 
-int cbd_blocks_src_sin(int time, int out, int A, int f, const char * name, sim_state_t * state){
-    const int pin[1] = {time};
+int cbd_blocks_src_sin(int out, int A, int f, const char * name, sim_state_t * state){
+    const int pin[1] = {state->time};
     const int pout[1] = {out};
     const int params[2] = {A, f};
-    int block = cbd_block_add(name, pin, 1, pout, 1, params, 2, eval_sin, state);
+    int block = cbd_block_add(name, pin, 1, pout, 1, params, 2, eval_sin, 0, state);
 
     return block;
 }

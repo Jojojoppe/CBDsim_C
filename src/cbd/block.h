@@ -10,10 +10,11 @@ typedef struct cbd_block_s {
     int name;           // Index to name array
     void * cache;       // Block of data used by the implemented block, is freed in deinit function (if not NULL)
     void (*eval)(struct cbd_block_s *, sim_state_t *);
+    int depchain_break; // nonzero if breaks chain of dependencies
 } cbd_block_t;  
 
 
-int cbd_block_add(const char * name, const int * ports_in, int ports_in_n, const int * ports_out, int ports_out_n, const int * params, int params_n, void (*eval)(cbd_block_t *, sim_state_t *), sim_state_t * state);
+int cbd_block_add(const char * name, const int * ports_in, int ports_in_n, const int * ports_out, int ports_out_n, const int * params, int params_n, void (*eval)(cbd_block_t *, sim_state_t *), int depchain_break, sim_state_t * state);
 void cbd_block_deinit(cbd_block_t * block);
 
 #endif

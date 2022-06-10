@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-void sim_init(sim_state_t * state){
+void sim_init(sim_state_t * state, double timestep){
     // Initialize all d_array_t's
     D_ARRAY_INIT(double, &state->values);
     D_ARRAY_INIT(char*, &state->names);
@@ -12,6 +12,12 @@ void sim_init(sim_state_t * state){
     D_ARRAY_INIT(cbd_signal_t, &state->cbd_signals);
     D_ARRAY_INIT(cbd_param_t, &state->cbd_params);
     D_ARRAY_INIT(cbd_block_t, &state->cbd_blocks);
+
+    // Simulation defaults
+    state->time = cbd_signal_add("time", state);
+    state->timestep = cbd_param_add("timestep", timestep, state);
+
+    D_ARRAY_INIT(int, &state->eval_order);
 }
 
 void sim_deinit(sim_state_t * state){
@@ -43,6 +49,7 @@ void sim_deinit(sim_state_t * state){
     d_array_deinit(&state->names);
 
     d_array_deinit(&state->values);
+    d_array_deinit(&state->eval_order);
 }
 
 int sim_add_name(const char * name, sim_state_t * state){
@@ -86,4 +93,78 @@ void dbg_sim_printall(sim_state_t * state){
         double value = *(double*)d_array_at(&state->values, sig->value);
         printf("\t- %s \t %f\n", name, value);
     }
+}
+
+void _sim_evaluate(int i, sim_state_t * state, int * block_evaluated, int * block_evaluated_round, int * sig_from, d_array_t * sig_to){
+    cbd_block_t * block = d_array_at(&state->cbd_blocks, i);
+    d_array_t * ina = d_array_at(&state->arrays, block->ports_in);
+    for(int j=0; j<ina->filled_size; j++){
+        int in = *(int*)d_array_at(ina, j);
+        int from = sig_from[in];
+        if(from<0) continue;
+        cbd_block_t * from_block = d_array_at(&state->cbd_blocks, from);
+
+        if(!from_block->depchain_break){
+            if(!block_evaluated[from]){
+                _sim_evaluate(from, state, block_evaluated, block_evaluated_round, sig_from, sig_to);
+                printf("do %d\n", from);
+                block_evaluated[from] = 1;
+                if(block_evaluated_round[from]){
+                    printf("ALGEBRAIC LOOP...\n");
+                }
+                block_evaluated_round[from] = 1;
+                d_array_insert(&state->eval_order, &from);
+            }
+        }
+    }
+}
+
+void sim_compile(sim_state_t * state){
+    // Map signals to blocks
+    int * sig_from = malloc(sizeof(int)*state->cbd_signals.filled_size);
+    d_array_t * sig_to = malloc(sizeof(d_array_t)*state->cbd_signals.filled_size);
+    for(int i=0; i<state->cbd_signals.filled_size; i++) D_ARRAY_INIT(int, &sig_to[i]);
+    // Set time coming from nowhere
+    sig_from[state->time] = -1;
+    // Loop over blocks to create mapping
+    for(int i=0; i<state->cbd_blocks.filled_size; i++){
+        cbd_block_t * block = d_array_at(&state->cbd_blocks, i);
+        d_array_t * pin = (d_array_t*)d_array_at(&state->arrays, block->ports_in);
+        d_array_t * pout = (d_array_t*)d_array_at(&state->arrays, block->ports_out);
+        // Set from values
+        for(int j=0; j<pout->filled_size; j++){
+            int sig = *(int*)d_array_at(pout, j);
+            sig_from[sig] = i;
+        };
+        // Add block to to values
+        for(int j=0; j<pin->filled_size; j++){
+            int sig = *(int*)d_array_at(pin, j);
+            d_array_insert(&sig_to[sig], &i);
+        };
+    }
+
+
+    // Find block order
+    int * block_evaluated = calloc(state->cbd_blocks.filled_size, sizeof(int));
+    d_array_t order;
+    D_ARRAY_INIT(int, &order);
+    // Start from all chain breaking blocks and traverse down
+    for(int i=0; i<state->cbd_blocks.filled_size; i++){
+        cbd_block_t * block = d_array_at(&state->cbd_blocks, i);
+        if(!block->depchain_break) continue;
+
+        int * block_evaluated_round = calloc(state->cbd_blocks.filled_size, sizeof(int));
+        _sim_evaluate(i, state, block_evaluated, block_evaluated_round, sig_from, sig_to);
+        free(block_evaluated_round);
+        printf("do %d\n", i);
+        d_array_insert(&state->eval_order, &i);
+    }
+
+    // check for any non chain breaking blocks
+    // TODO
+    free(block_evaluated);
+
+    free(sig_from);
+    for(int i=0; i<state->cbd_signals.filled_size; i++) d_array_deinit(&sig_to[i]);
+    free(sig_to);
 }
