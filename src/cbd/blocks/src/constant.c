@@ -38,7 +38,7 @@ void eval_constant(cbd_block_t * block, sim_state_t * state){
     *c->out = *c->A;
 }
 
-int cbd_blocks_src_constant(int out, int A, const char * name, sim_state_t * state){
+int cbd_block_src_constant(int out, int A, const char * name, sim_state_t * state){
     const int pin[1] = {state->time};
     const int pout[1] = {out};
     const int params[1] = {A};

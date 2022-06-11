@@ -24,12 +24,12 @@ int main(int argc, char ** argv){
 
     PARAM(K_I, 1.0, &state)
     PARAM(K_C, 1.0, &state)
-    PARAM(K_R, 0.5, &state)
+    PARAM(K_R, 0.0, &state)
     PARAM(int_I_init, 0.0, &state)
     PARAM(int_C_init, 0.0, &state)
 
-    int b_int_I = cbd_block_standard_int_euler(s_e2, s_p2, p_int_I_init, "int_I", &state);
-    int b_int_C = cbd_block_standard_int_euler(s_f, s_q3, p_int_C_init, "int_C", &state);
+    int b_int_I = cbd_block_standard_int_rk4(s_e2, s_p2, p_int_I_init, "int_I", &state);
+    int b_int_C = cbd_block_standard_int_rk4(s_f, s_q3, p_int_C_init, "int_C", &state);
     int b_K_I = cbd_block_standard_gain(s_p2, s_f, p_K_I, "K_I", &state);
     int b_K_C = cbd_block_standard_gain(s_q3, s_e3, p_K_C, "K_C", &state);
     int b_K_R = cbd_block_standard_gain(s_f, s_e4, p_K_R, "K_R", &state);
@@ -42,10 +42,10 @@ int main(int argc, char ** argv){
 
     PARAM(inp_A, 1.0, &state)
     PARAM(inp_t0, 0.5, &state)
-    int b_inp = cbd_blocks_src_step(s_ein, p_inp_A, p_inp_t0, "inp", &state);
+    int b_inp = cbd_block_src_step(s_ein, p_inp_A, p_inp_t0, "inp", &state);
 
     // sim_viz(&state);
-    sim_serialize("models/RLC.model", &state);
+    // sim_serialize("models/RLC.model", &state);
 
     sim_compile(&state);
 

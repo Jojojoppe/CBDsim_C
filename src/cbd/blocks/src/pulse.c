@@ -51,7 +51,7 @@ void eval_pulse(cbd_block_t * block, sim_state_t * state){
         *c->out = 0.0;
 }
 
-int cbd_blocks_src_pulse(int out, int A, int t1, int t2, const char * name, sim_state_t * state){
+int cbd_block_src_pulse(int out, int A, int t1, int t2, const char * name, sim_state_t * state){
     const int pin[1] = {state->time};
     const int pout[1] = {out};
     const int params[3] = {A, t1, t2};

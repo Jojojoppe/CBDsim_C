@@ -42,7 +42,7 @@ void eval_sin(cbd_block_t * block, sim_state_t * state){
     *c->out = (*c->A) * sin(2*M_PI* (*c->f) * (*c->time));
 }
 
-int cbd_blocks_src_sin(int out, int A, int f, const char * name, sim_state_t * state){
+int cbd_block_src_sin(int out, int A, int f, const char * name, sim_state_t * state){
     const int pin[1] = {state->time};
     const int pout[1] = {out};
     const int params[2] = {A, f};

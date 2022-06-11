@@ -14,6 +14,7 @@ src_c = src/dynamic_array.c \
     src/cbd/blocks/standard/muldiv.c \
     src/cbd/blocks/standard/int_euler.c \
     src/cbd/blocks/standard/int_trap.c \
+    src/cbd/blocks/standard/int_rk4.c \
     src/cbd/blocks/standard/gain.c \
     src/sim.c \
     src/main.c

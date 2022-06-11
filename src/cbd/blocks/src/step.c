@@ -45,7 +45,7 @@ void eval_step(cbd_block_t * block, sim_state_t * state){
         *c->out = *c->A;
 }
 
-int cbd_blocks_src_step(int out, int A, int t, const char * name, sim_state_t * state){
+int cbd_block_src_step(int out, int A, int t, const char * name, sim_state_t * state){
     const int pin[1] = {state->time};
     const int pout[1] = {out};
     const int params[2] = {A, t};
