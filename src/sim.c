@@ -186,6 +186,10 @@ void sim_plot(const char * options, sim_state_t * state){
     fprintf(state->plotter, "plot %s\n", options);
 }
 
+void sim_csv(const char * options, sim_state_t * state){
+    fprintf(state->plotter, "csv %s\n", options);
+}
+
 void sim_run(double runtime, sim_state_t * state){
     cbd_signal_t * s_time = d_array_at(&state->cbd_signals, state->time);
     double * time = d_array_at(&state->values, s_time->value);

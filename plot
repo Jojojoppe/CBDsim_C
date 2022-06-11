@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import matplotlib.pyplot as plt
 import numpy as np
+import csv
 
 state = "idle"
 
@@ -29,6 +30,20 @@ while True:
 
         elif s_in[0]=="data":
             state="data"
+
+        elif s_in[0]=="csv":
+            fname = s_in[1]
+            colused = []
+            for c in s_in[2:]:
+                colused.append(c)
+            with open(fname, 'w') as f:
+                writer = csv.writer(f)
+                writer.writerow(colused)
+                for i in range(len(cols[0])):
+                    r = []
+                    for name in colused:
+                        r.append(cols[colindex[name]][i])
+                    writer.writerow(r)
 
         elif s_in[0]=="plot":
             xname = ""

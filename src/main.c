@@ -32,7 +32,7 @@ int main(int argc, char ** argv){
     int block_step = cbd_blocks_src_step(signal_e1, param_step_A, param_step_t, "step", &state);
     int block_gainC = cbd_block_standard_gain(signal_q2, signal_e2, param_C_K, "gainC", &state);
     int block_gainR = cbd_block_standard_gain(signal_e3, signal_f, param_R_K, "gainR", &state);
-    int block_intC = cbd_block_standard_int_euler(signal_f, signal_q2, param_intC_init, "intC", &state);
+    int block_intC = cbd_block_standard_int_trap(signal_f, signal_q2, param_intC_init, "intC", &state);
     int block_add1; {
         const int pinp[1] = {signal_e1};
         const int pinm[1] = {signal_e2};
@@ -51,6 +51,7 @@ int main(int argc, char ** argv){
     sim_run(10.0, &state);
 
     sim_plot("2,1 x:time y:e1:label:input y:e2:label:U_C y:e3:label:U_R p x:time y:f:label:I p", &state);
+    sim_csv("out/test.csv time e1 e2 e3 f", &state);
     
     sim_deinit(&state);
     return 0;

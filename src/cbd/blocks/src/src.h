@@ -6,5 +6,6 @@
 
 int cbd_blocks_src_sin(int out, int A, int f, const char * name, sim_state_t * state);
 int cbd_blocks_src_step(int out, int A, int t, const char * name, sim_state_t * state);
+int cbd_blocks_src_constant(int out, int A, const char * name, sim_state_t * state);
 
 #endif

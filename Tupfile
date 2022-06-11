@@ -6,7 +6,9 @@ src_c = src/dynamic_array.c \
     src/cbd/param.c \
     src/cbd/blocks/src/sin.c \
     src/cbd/blocks/src/step.c \
+    src/cbd/blocks/src/constant.c \
     src/cbd/blocks/standard/plusmin.c \
+    src/cbd/blocks/standard/muldiv.c \
     src/cbd/blocks/standard/int_euler.c \
     src/cbd/blocks/standard/int_trap.c \
     src/cbd/blocks/standard/gain.c \
