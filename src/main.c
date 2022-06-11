@@ -13,48 +13,27 @@ int main(int argc, char ** argv){
 
     // Define Block Diagram
     // --------------------
+    int s_in = cbd_signal_add("in", &state);
+    int s_out = cbd_signal_add("out", &state);
 
-    // Signals
-    int signal_e1 = cbd_signal_add("e1", &state);
-    int signal_e2 = cbd_signal_add("e2", &state);
-    int signal_e3 = cbd_signal_add("e3", &state);
-    int signal_q2 = cbd_signal_add("q2", &state);
-    int signal_f = cbd_signal_add("f", &state);
+    int p_sin_A = cbd_param_add("sin_A", 1.0, &state);
+    int p_sin_f = cbd_param_add("sin_f", 2.0, &state);
+    int p_K1_K = cbd_param_add("K1_K", -3.0, &state);
 
-    // Paramters
-    int param_pulse_A = cbd_param_add("pulse_A", 1.0, &state);
-    int param_pulse_t0 = cbd_param_add("pulse_t0", 1.0, &state);
-    int param_pulse_t1 = cbd_param_add("pulse_t1", 11.0, &state);
-    int param_C_K = cbd_param_add("C_K", 1/2.0, &state);
-    int param_R_K = cbd_param_add("R_K", 1.0, &state);
-    int param_intC_init = cbd_param_add("intC_init", 0.0, &state);
-
-    // Blocks
-    int block_pulse = cbd_blocks_src_pulse(signal_e1, param_pulse_A, param_pulse_t0, param_pulse_t1, "step", &state);
-    int block_gainC = cbd_block_standard_gain(signal_q2, signal_e2, param_C_K, "gainC", &state);
-    int block_gainR = cbd_block_standard_gain(signal_e3, signal_f, param_R_K, "gainR", &state);
-    int block_intC = cbd_block_standard_int_trap(signal_f, signal_q2, param_intC_init, "intC", &state);
-    int block_add1; {
-        const int pinp[1] = {signal_e1};
-        const int pinm[1] = {signal_e2};
-        block_add1 = cbd_block_standard_plusmin(pinp, 1, pinm, 1, signal_e3, "add1", &state);
-    }
+    int b_sin = cbd_blocks_src_sin(s_in, p_sin_A, p_sin_f, "sin", &state);
+    int b_K1 = cbd_block_standard_gain(s_in, s_out, p_K1_K, "K1", &state);
     // --------------------
 
-    sim_compile(&state);
-    // sim_serialize("test.model", &state);
     sim_viz(&state);
+    sim_serialize("models/stateless_path.model", &state);
+    sim_compile(&state);
 
     sim_watch_signal(state.time, &state);
-    sim_watch_signal(signal_e1, &state);
-    sim_watch_signal(signal_e2, &state);
-    sim_watch_signal(signal_e3, &state);
-    sim_watch_signal(signal_f, &state);
-    
-    sim_run(20.0, &state);
+    sim_watch_signal(s_in, &state);
+    sim_watch_signal(s_out, &state);
+    sim_run(5.0, &state);
 
-    sim_plot("2,1 x:time y:e1:label:input y:e2:label:U_C y:e3:label:U_R p x:time y:f:label:I p", &state);
-    // sim_csv("out/test.csv time e1 e2 e3 f", &state);
+    sim_plot("1,1 x:time y:in y:out p", &state);
 
     sim_deinit(&state);
     return 0;

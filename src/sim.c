@@ -26,11 +26,10 @@ void sim_init(sim_state_t * state, double timestep){
     cbd_block_register_eval_functions(state);
 
     state->plotter = popen("./plot", "w");
-    state->_initialized = 1;
+    state->_compiled = 0;
 }
 
 void sim_deinit(sim_state_t * state){
-    if(!state->_initialized) return;
     // Deinitialize arrays array
     for(int i=0; i<state->arrays.filled_size; i++){
         d_array_deinit(d_array_at(&state->arrays, i));
@@ -65,10 +64,11 @@ void sim_deinit(sim_state_t * state){
     fprintf(state->plotter, "X\n");
     pclose(state->plotter);
     free(state->cbd_block_eval_functions);
-    state->_initialized = 0;
+    state->_compiled = 0;
 }
 
 int sim_add_name(const char * name, sim_state_t * state){
+    if(state->_compiled==1) return -1;
     // Create string for name
     int nlen = strlen(name);
     char * n = (char*) malloc(nlen+1);
@@ -80,11 +80,13 @@ int sim_add_name(const char * name, sim_state_t * state){
 }
 
 int sim_add_value(const double v, sim_state_t * state){
+    if(state->_compiled==1) return -1;
     d_array_insert(&state->values, (void*)&v);
     return state->values.filled_size-1;
 }
 
 int sim_add_array(const int * vals, int vals_n, sim_state_t * state){
+    if(state->_compiled==1) return -1;
     d_array_t darr;
     D_ARRAY_INIT(int, &darr);
     for(int i=0; i<vals_n; i++){
@@ -126,6 +128,7 @@ void _sim_evaluate(int i, sim_state_t * state, int * block_evaluated, int * bloc
                 block_evaluated[from] = 1;
                 if(block_evaluated_round[from]){
                     printf("ALGEBRAIC LOOP...\n");
+                    sim_deinit(state);
                     exit(1);
                 }
                 block_evaluated_round[from] = 1;
@@ -135,7 +138,34 @@ void _sim_evaluate(int i, sim_state_t * state, int * block_evaluated, int * bloc
     }
 }
 
+int _sim_findend(int i, sim_state_t * state, int * visited, int * sig_from, d_array_t * sig_to){
+    cbd_block_t * block = d_array_at(&state->cbd_blocks, i);
+    d_array_t * ina = d_array_at(&state->arrays, block->ports_in);
+    d_array_t * outa = d_array_at(&state->arrays, block->ports_out);
+    if(visited[i]){
+        printf("ALGEBRAIC LOOP...\n");
+        sim_deinit(state);
+        exit(1);
+    }
+    visited[i] = 1;
+    for(int j=0; j<outa->filled_size; j++){
+        int out = *(int*)d_array_at(outa, j);
+        d_array_t * toa = &sig_to[out];
+        if(toa->filled_size==0){
+            // Found end of path
+            return i;
+        }
+        for(int k=0; k<toa->filled_size; k++){
+            int toblock = *(int*)d_array_at(toa, k);
+            int r = _sim_findend(toblock, state, visited, sig_from, sig_to);
+            if(r!=-1) return r;
+        }
+    }
+    return -1;
+}
+
 void sim_compile(sim_state_t * state){
+    if(state->_compiled) return;
 
     dbg_sim_printall(state);
 
@@ -177,29 +207,49 @@ void sim_compile(sim_state_t * state){
         d_array_insert(&state->eval_order, &i);
     }
 
-    // TODO check for any non chain breaking blocks
-    // Loop over all non-evaluated blocks, traverse to top and evaluate
+    // Loop over all non-evaluated blocks (non-chain breaking / algebraic paths), traverse to top and evaluate
+    for(int i=0; i<state->cbd_blocks.filled_size; i++){
+        cbd_block_t * block = d_array_at(&state->cbd_blocks, i);
+        if(block->depchain_break || block_evaluated[i]) continue;
+
+        int * visited = calloc(state->cbd_blocks.filled_size, sizeof(int));
+        int end = _sim_findend(i, state, visited, sig_from, sig_to);
+        if(end!=-1){
+            int * block_evaluated_round = calloc(state->cbd_blocks.filled_size, sizeof(int));
+            _sim_evaluate(end, state, block_evaluated, block_evaluated_round, sig_from, sig_to);
+            free(block_evaluated_round);
+            d_array_insert(&state->eval_order, &end);
+            block_evaluated[end] = 1;
+        }
+        free(visited);
+    }
 
     free(block_evaluated);
 
     free(sig_from);
     for(int i=0; i<state->cbd_signals.filled_size; i++) d_array_deinit(&sig_to[i]);
     free(sig_to);
+
+    state->_compiled = 1;
 }
 
 void sim_watch_signal(int signal, sim_state_t * state){
+    if(!state->_compiled) return;
     d_array_insert(&state->watchlist, &signal);
 }
 
 void sim_plot(const char * options, sim_state_t * state){
+    if(!state->_compiled) return;
     fprintf(state->plotter, "plot %s\n", options);
 }
 
 void sim_csv(const char * options, sim_state_t * state){
+    if(!state->_compiled) return;
     fprintf(state->plotter, "csv %s\n", options);
 }
 
 void sim_run(double runtime, sim_state_t * state){
+    if(!state->_compiled) return;
     cbd_signal_t * s_time = d_array_at(&state->cbd_signals, state->time);
     double * time = d_array_at(&state->values, s_time->value);
     cbd_param_t * p_timestep = d_array_at(&state->cbd_params, state->timestep);
@@ -242,6 +292,7 @@ void sim_run(double runtime, sim_state_t * state){
 }
 
 void sim_serialize(const char * fname, sim_state_t * state){
+    if(state->_compiled) return;
     FILE * f = fopen(fname, "w");
     // Write sizes of arrays on one line
     fprintf(f, "%08d ", state->names.filled_size-2);
@@ -395,9 +446,10 @@ int sim_get_signal(const char * name, sim_state_t * state){
 }
 
 void sim_viz(sim_state_t * state){
+    if(state->_compiled) return;
     FILE * f = popen("dot -Tpng > output.png", "w");
 
-    fprintf(f, "digraph G {\n\tsplines=\"FALSE\";\n");
+    fprintf(f, "digraph G {\n\tsplines=\"FALSE\";\n\trankdir=LR;\n");
     
     for(int i=0; i<state->cbd_blocks.filled_size; i++){
         cbd_block_t * block = d_array_at(&state->cbd_blocks, i);
@@ -439,6 +491,11 @@ void sim_viz(sim_state_t * state){
         char * name = *(char**)d_array_at(&state->names, sig->name);
         cbd_block_t * from = d_array_at(&state->cbd_blocks, sig_from[i]);
         char * fromname = *(char**)d_array_at(&state->names, from->name);
+        if(sig_to[i].filled_size==0){
+            fprintf(f, "\tnowhere%d [style=invis,shape=point]\n", i);
+            fprintf(f, "\t%s -> nowhere%d [label=\"%s\"];\n", fromname, i, name);
+            continue;
+        }
         for(int j=0; j<sig_to[i].filled_size; j++){
             cbd_block_t * to = d_array_at(&state->cbd_blocks, *(int*)d_array_at(&sig_to[i], j));
             char * toname = *(char**)d_array_at(&state->names, to->name);
