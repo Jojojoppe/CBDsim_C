@@ -42,7 +42,7 @@ void eval_muldiv(cbd_block_t * block, sim_state_t * state){
     eval_muldiv_state_t * c = (eval_muldiv_state_t*)block->cache;
     double v = 1.0;
     for(int i=0; i<c->inp_n; i++) v*=*c->in[i];
-    for(int i=c->inm_n; i<c->inp_n+c->inm_n; i++) v/=*c->in[i];
+    for(int i=c->inm_n-1; i<c->inp_n+c->inm_n; i++) v/=*c->in[i];
     *c->out = v;
 }
 

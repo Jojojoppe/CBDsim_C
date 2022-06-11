@@ -489,15 +489,22 @@ void sim_viz(sim_state_t * state){
     for(int i=1; i<state->cbd_signals.filled_size; i++){
         cbd_signal_t * sig = d_array_at(&state->cbd_signals, i);
         char * name = *(char**)d_array_at(&state->names, sig->name);
+        if(sig_from[i]<0) continue;
         cbd_block_t * from = d_array_at(&state->cbd_blocks, sig_from[i]);
+        if(!from) continue;
         char * fromname = *(char**)d_array_at(&state->names, from->name);
-        if(sig_to[i].filled_size==0){
-            fprintf(f, "\tnowhere%d [style=invis,shape=point]\n", i);
-            fprintf(f, "\t%s -> nowhere%d [label=\"%s\"];\n", fromname, i, name);
-            continue;
-        }
-        for(int j=0; j<sig_to[i].filled_size; j++){
-            cbd_block_t * to = d_array_at(&state->cbd_blocks, *(int*)d_array_at(&sig_to[i], j));
+
+        if(sig_to[i].filled_size>1){
+            fprintf(f, "\tnowhere%d [shape=point]\n", i);
+            fprintf(f, "\t%s -> nowhere%d [label=\"%s\",arrowhead=none];\n", fromname, i, name);
+
+            for(int j=0; j<sig_to[i].filled_size; j++){
+                cbd_block_t * to = d_array_at(&state->cbd_blocks, *(int*)d_array_at(&sig_to[i], j));
+                char * toname = *(char**)d_array_at(&state->names, to->name);
+                fprintf(f, "\tnowhere%d -> %s;\n", i, toname);
+            }
+        }else{
+            cbd_block_t * to = d_array_at(&state->cbd_blocks, *(int*)d_array_at(&sig_to[i], 0));
             char * toname = *(char**)d_array_at(&state->names, to->name);
             fprintf(f, "\t%s -> %s [label=\"%s\"];\n", fromname, toname, name);
         }

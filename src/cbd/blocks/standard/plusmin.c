@@ -41,8 +41,12 @@ void eval_plusmin(cbd_block_t * block, sim_state_t * state){
     }
     eval_plusmin_state_t * c = (eval_plusmin_state_t*)block->cache;
     double v = 0.0;
-    for(int i=0; i<c->inp_n; i++) v+=*c->in[i];
-    for(int i=c->inm_n; i<c->inp_n+c->inm_n; i++) v-=*c->in[i];
+    for(int i=0; i<c->inp_n; i++){
+        v+=*c->in[i];
+    }
+    for(int i=c->inm_n-1; i<c->inp_n+c->inm_n; i++){
+        v-=*c->in[i];
+    }
     *c->out = v;
 }
 
