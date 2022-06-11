@@ -42,14 +42,16 @@ int main(int argc, char ** argv){
 
     sim_compile(&state);
 
+    sim_watch_signal(state.time, &state);
     sim_watch_signal(signal_e1, &state);
     sim_watch_signal(signal_e2, &state);
     sim_watch_signal(signal_e3, &state);
     sim_watch_signal(signal_f, &state);
     
     sim_run(10.0, &state);
+
+    sim_plot("2,1 x:time y:e1:label:input y:e2:label:U_C y:e3:label:U_R p x:time y:f:label:I p", &state);
     
     sim_deinit(&state);
-
     return 0;
 }

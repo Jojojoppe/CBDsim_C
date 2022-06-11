@@ -6,6 +6,8 @@
 #include "cbd/param.h"
 #include "cbd/block.h"
 
+#include <stdio.h>
+
 typedef struct sim_state_s {
     // Layout
     // ------
@@ -21,7 +23,9 @@ typedef struct sim_state_s {
     int time, timestep;
 
     d_array_t eval_order;
-    double ** watchlist;
+    d_array_t watchlist;
+
+    FILE * plotter;
 } sim_state_t;
 
 void sim_init(sim_state_t * state, double timestep);
@@ -34,6 +38,7 @@ int sim_add_array(const int * vals, int vals_n, sim_state_t * state);
 void sim_compile(sim_state_t * state);
 
 void sim_watch_signal(int signal, sim_state_t * state);
+void sim_plot(const char * options, sim_state_t * state);
 
 void sim_run(double runtime, sim_state_t * state);
 

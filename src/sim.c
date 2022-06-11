@@ -18,6 +18,9 @@ void sim_init(sim_state_t * state, double timestep){
     state->timestep = cbd_param_add("timestep", timestep, state);
 
     D_ARRAY_INIT(int, &state->eval_order);
+    D_ARRAY_INIT(int, &state->watchlist);
+
+    state->plotter = popen("./plot", "w");
 }
 
 void sim_deinit(sim_state_t * state){
@@ -50,8 +53,10 @@ void sim_deinit(sim_state_t * state){
 
     d_array_deinit(&state->values);
     d_array_deinit(&state->eval_order);
+    d_array_deinit(&state->watchlist);
 
-    free(state->watchlist);
+    fprintf(state->plotter, "X\n");
+    pclose(state->plotter);
 }
 
 int sim_add_name(const char * name, sim_state_t * state){
@@ -109,7 +114,6 @@ void _sim_evaluate(int i, sim_state_t * state, int * block_evaluated, int * bloc
         if(!from_block->depchain_break){
             if(!block_evaluated[from]){
                 _sim_evaluate(from, state, block_evaluated, block_evaluated_round, sig_from, sig_to);
-                printf("do %d\n", from);
                 block_evaluated[from] = 1;
                 if(block_evaluated_round[from]){
                     printf("ALGEBRAIC LOOP...\n");
@@ -152,6 +156,7 @@ void sim_compile(sim_state_t * state){
 
     // Find block order
     int * block_evaluated = calloc(state->cbd_blocks.filled_size, sizeof(int));
+
     // Start from all chain breaking blocks and traverse down
     for(int i=0; i<state->cbd_blocks.filled_size; i++){
         cbd_block_t * block = d_array_at(&state->cbd_blocks, i);
@@ -160,7 +165,6 @@ void sim_compile(sim_state_t * state){
         int * block_evaluated_round = calloc(state->cbd_blocks.filled_size, sizeof(int));
         _sim_evaluate(i, state, block_evaluated, block_evaluated_round, sig_from, sig_to);
         free(block_evaluated_round);
-        printf("do %d\n", i);
         d_array_insert(&state->eval_order, &i);
     }
 
@@ -172,15 +176,14 @@ void sim_compile(sim_state_t * state){
     free(sig_from);
     for(int i=0; i<state->cbd_signals.filled_size; i++) d_array_deinit(&sig_to[i]);
     free(sig_to);
-
-    // Create watch list array
-    state->watchlist = calloc(state->cbd_signals.filled_size, sizeof(double*));
 }
 
 void sim_watch_signal(int signal, sim_state_t * state){
-    cbd_signal_t * s = d_array_at(&state->cbd_signals, signal);
-    double * v = d_array_at(&state->values, s->value);
-    state->watchlist[signal] = v;
+    d_array_insert(&state->watchlist, &signal);
+}
+
+void sim_plot(const char * options, sim_state_t * state){
+    fprintf(state->plotter, "plot %s\n", options);
 }
 
 void sim_run(double runtime, sim_state_t * state){
@@ -189,19 +192,19 @@ void sim_run(double runtime, sim_state_t * state){
     cbd_param_t * p_timestep = d_array_at(&state->cbd_params, state->timestep);
     double * timestep = d_array_at(&state->values, p_timestep->value);
 
-    d_array_t gnuplot;
-    D_ARRAY_INIT(FILE*, &gnuplot);
-    for(int i=0; i<state->cbd_signals.filled_size; i++){
-        if(state->watchlist[i]){
-            FILE* f = popen("gnuplot", "w");
-            cbd_signal_t * sig = (cbd_signal_t*)d_array_at(&state->cbd_signals, i);
-            char * name = *(char**)d_array_at(&state->names, sig->name);
-            fprintf(f, "set out\nset term dumb\n");
-            fprintf(f, "plot '-' with lines title '%s'\n", name);
-            d_array_insert(&gnuplot, &f);
-        }
+    // Start plotter and send signal names
+    d_array_t watch_values;
+    D_ARRAY_INIT(int, &watch_values);
+    fprintf(state->plotter, "cols ");
+    for(int i=0; i<state->watchlist.filled_size; i++){
+        cbd_signal_t * s = d_array_at(&state->cbd_signals, *(int*)d_array_at(&state->watchlist, i));
+        d_array_insert(&watch_values, &s->value);
+        char * name = *(char**)d_array_at(&state->names, s->name);
+        fprintf(state->plotter, "%s ", name);
     }
+    fprintf(state->plotter, "\n");
 
+    fprintf(state->plotter, "data\n");
     while(*time<=runtime){
 
         for(int i=0; i<state->eval_order.filled_size; i++){
@@ -209,28 +212,16 @@ void sim_run(double runtime, sim_state_t * state){
             cbd_block_t * block = d_array_at(&state->cbd_blocks, b_i);
             block->eval(block, state);
         }
-
-        int j = 0;
-        for(int i=0; i<state->cbd_signals.filled_size; i++){
-            if(state->watchlist[i]){
-                FILE* f = ((FILE**)gnuplot.begin)[j++];
-                fprintf(f, "%g %g\n", *time, *state->watchlist[i]);
-            }
-        }
-
         *time += *timestep;
-    }
 
-    int j = 0;
-    for(int i=0; i<state->cbd_signals.filled_size; i++){
-        if(state->watchlist[i]){
-            FILE* f = ((FILE**)gnuplot.begin)[j++];
-            fprintf(f, "e\n");
-            fflush(f);
-            usleep(50000);
-            fclose(f);
+        for(int i=0; i<watch_values.filled_size; i++){
+            int vid = *(int*)d_array_at(&watch_values, i);
+            double * v = d_array_at(&state->values, vid);
+            fprintf(state->plotter, "%g ", *v);
         }
+        fprintf(state->plotter, "\n");
     }
+    fprintf(state->plotter, "e\n");
 
-    d_array_deinit(&gnuplot);
+    d_array_deinit(&watch_values);
 }
