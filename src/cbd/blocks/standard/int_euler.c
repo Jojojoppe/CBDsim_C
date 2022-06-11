@@ -50,8 +50,9 @@ void eval_int_euler(cbd_block_t * block, sim_state_t * state){
     }
     eval_state_int_euler_t * c = (eval_state_int_euler_t*)block->cache;
 
-    *c->out = *c->state;
+    // Now in 'fast' mode -> check validation spread sheet for details. Slow mode (extra delay) switches the order
     *c->state = *c->state + *c->timestep * *c->in;
+    *c->out = *c->state;
 }
 
 int cbd_block_standard_int_euler(int in, int out, int initial, const char * name, sim_state_t * state){

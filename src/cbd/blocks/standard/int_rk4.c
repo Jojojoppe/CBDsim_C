@@ -53,7 +53,7 @@ void eval_int_rk4(cbd_block_t * block, sim_state_t * state){
         cache->sample = 0;
 
         // FIXME this should kinda happen but not like this...
-        *cache->timestep /= 2.0;
+        // *cache->timestep /= 2.0;
 
         block->cache = cache;
     }

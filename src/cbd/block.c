@@ -49,5 +49,6 @@ void cbd_block_register_eval_functions(sim_state_t * state){
     ADD_EVAL_FUNC(STANDARD_INT_EULER, eval_int_euler)
     ADD_EVAL_FUNC(STANDARD_INT_TRAP, eval_int_trap)
     ADD_EVAL_FUNC(STANDARD_INT_RK4, eval_int_rk4)
+    ADD_EVAL_FUNC(STANDARD_EXP, eval_exp)
 
 }

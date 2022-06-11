@@ -504,9 +504,14 @@ void sim_viz(sim_state_t * state){
                 fprintf(f, "\tnowhere%d -> %s;\n", i, toname);
             }
         }else{
-            cbd_block_t * to = d_array_at(&state->cbd_blocks, *(int*)d_array_at(&sig_to[i], 0));
-            char * toname = *(char**)d_array_at(&state->names, to->name);
-            fprintf(f, "\t%s -> %s [label=\"%s\"];\n", fromname, toname, name);
+            if(sig_to[i].filled_size==0){
+                fprintf(f, "\tnowhere%d [shape=point]\n", i);
+                fprintf(f, "\t%s -> nowhere%d [label=\"%s\",arrowhead=none];\n", fromname, i, name);
+            }else{
+                cbd_block_t * to = d_array_at(&state->cbd_blocks, *(int*)d_array_at(&sig_to[i], 0));
+                char * toname = *(char**)d_array_at(&state->names, to->name);
+                fprintf(f, "\t%s -> %s [label=\"%s\"];\n", fromname, toname, name);
+            }
         }
     }
 

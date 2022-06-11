@@ -12,5 +12,6 @@ int cbd_block_standard_int_trap(int in, int out, int initial, const char * name,
 int cbd_block_standard_int_rk4(int in, int out, int initial, const char * name, sim_state_t * state);
 
 int cbd_block_standard_gain(int in, int out, int gain, const char * name, sim_state_t * state);
+int cbd_block_standard_exp(int in, int out, const char * name, sim_state_t * state);
 
 #endif
