@@ -28,8 +28,8 @@ int main(int argc, char ** argv){
     PARAM(int_I_init, 0.0, &state)
     PARAM(int_C_init, 0.0, &state)
 
-    int b_int_I = cbd_block_standard_int_euler(s_e2, s_p2, p_int_I_init, "int_I", &state);
-    int b_int_C = cbd_block_standard_int_euler(s_f, s_q3, p_int_C_init, "int_C", &state);
+    int b_int_I = cbd_block_standard_int_trap(s_e2, s_p2, p_int_I_init, "int_I", &state);
+    int b_int_C = cbd_block_standard_int_trap(s_f, s_q3, p_int_C_init, "int_C", &state);
     int b_K_I = cbd_block_standard_gain(s_p2, s_f, p_K_I, "K_I", &state);
     int b_K_C = cbd_block_standard_gain(s_q3, s_e3, p_K_C, "K_C", &state);
     int b_K_R = cbd_block_standard_gain(s_f, s_e4, p_K_R, "K_R", &state);
@@ -59,6 +59,7 @@ int main(int argc, char ** argv){
     sim_run(40.0, &state);
 
     sim_plot("2,1 x:time y:ein y:e2 y:e3 y:e4 p x:time y:f p", &state);
+    // sim_csv("rlc_trap.csv time f", &state);
 
     sim_deinit(&state);
     return 0;
