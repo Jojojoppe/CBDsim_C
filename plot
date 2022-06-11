@@ -86,6 +86,8 @@ while True:
                                 line.set_label(oval)
                     sp.set_xlabel(xname)
                     sp.legend(loc='upper right')
+                    sp.grid(visible=True, which='both')
+                    sp.set_xbound(min(cols[colindex[xname]]), max(cols[colindex[xname]]))
 
             plt.show()
 
