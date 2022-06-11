@@ -52,7 +52,7 @@ int cbd_block_standard_plusmin(const int * inp, int inp_n, const int * inm, int 
     for(int i=inp_n; i<inp_n+inm_n; i++) pin[i] = inm[i-inp_n];
     const int params[2] = {inp_n, inm_n};
     const int pout[1] = {out};
-    int block = cbd_block_add(name, pin, inp_n+inm_n, pout, 1, params, 2, eval_plusmin, 0, state);
+    int block = cbd_block_add(name, pin, inp_n+inm_n, pout, 1, params, 2, STANDARD_PLUSMIN, 0, state);
     free(pin);
     return block;
 }

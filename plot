@@ -85,7 +85,7 @@ while True:
                             elif oname=="label":
                                 line.set_label(oval)
                     sp.set_xlabel(xname)
-                    sp.legend()
+                    sp.legend(loc='upper right')
 
             plt.show()
 

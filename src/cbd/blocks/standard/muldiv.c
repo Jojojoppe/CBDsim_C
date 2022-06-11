@@ -52,7 +52,7 @@ int cbd_block_standard_muldiv(const int * inm, int inm_n, const int * ind, int i
     for(int i=inm_n; i<inm_n+ind_n; i++) pin[i] = ind[i-inm_n];
     const int params[2] = {inm_n, ind_n};
     const int pout[1] = {out};
-    int block = cbd_block_add(name, pin, inm_n+ind_n, pout, 1, params, 2, eval_muldiv, 0, state);
+    int block = cbd_block_add(name, pin, inm_n+ind_n, pout, 1, params, 2, STANDARD_MULDIV, 0, state);
     free(pin);
     return block;
 }

@@ -42,7 +42,7 @@ int cbd_blocks_src_constant(int out, int A, const char * name, sim_state_t * sta
     const int pin[1] = {state->time};
     const int pout[1] = {out};
     const int params[1] = {A};
-    int block = cbd_block_add(name, pin, 1, pout, 1, params, 1, eval_constant, 0, state);
+    int block = cbd_block_add(name, pin, 1, pout, 1, params, 1, SRC_CONSTANT, 0, state);
 
     return block;
 }

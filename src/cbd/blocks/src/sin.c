@@ -46,7 +46,7 @@ int cbd_blocks_src_sin(int out, int A, int f, const char * name, sim_state_t * s
     const int pin[1] = {state->time};
     const int pout[1] = {out};
     const int params[2] = {A, f};
-    int block = cbd_block_add(name, pin, 1, pout, 1, params, 2, eval_sin, 0, state);
+    int block = cbd_block_add(name, pin, 1, pout, 1, params, 2, SRC_SIN, 0, state);
 
     return block;
 }

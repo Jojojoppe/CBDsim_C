@@ -46,7 +46,7 @@ int cbd_block_standard_gain(int in, int out, int gain, const char * name, sim_st
     const int pin[1] = {in};
     const int pout[1] = {out};
     const int params[1] = {gain};
-    int block = cbd_block_add(name, pin, 1, pout, 1, params, 1, eval_gain, 0, state);
+    int block = cbd_block_add(name, pin, 1, pout, 1, params, 1, STANDARD_GAIN, 0, state);
 
     return block;
 }

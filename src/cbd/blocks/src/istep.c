@@ -10,9 +10,9 @@ typedef struct{
     double * out;
     double * A;
     double * t;
-} eval_state_step_t;
+} eval_state_istep_t;
 
-void eval_step(cbd_block_t * block, sim_state_t * state){
+void eval_istep(cbd_block_t * block, sim_state_t * state){
     if(!block->cache){
         // Create simulation cache
 
@@ -20,7 +20,7 @@ void eval_step(cbd_block_t * block, sim_state_t * state){
         d_array_t * pout = (d_array_t*)d_array_at(&state->arrays, block->ports_out);
         d_array_t * params = (d_array_t*)d_array_at(&state->arrays, block->params);
 
-        eval_state_step_t * cache = malloc(sizeof(eval_state_step_t));
+        eval_state_istep_t * cache = malloc(sizeof(eval_state_istep_t));
 
         int time = ((int*)pin->begin)[0];
         int out = ((int*)pout->begin)[0];
@@ -38,18 +38,18 @@ void eval_step(cbd_block_t * block, sim_state_t * state){
 
         block->cache = cache;
     }
-    eval_state_step_t * c = (eval_state_step_t*)block->cache;
+    eval_state_istep_t * c = (eval_state_istep_t*)block->cache;
     if(*c->time<*c->t)
-        *c->out = 0.0;
-    else
         *c->out = *c->A;
+    else
+        *c->out = 0.0;
 }
 
-int cbd_blocks_src_step(int out, int A, int t, const char * name, sim_state_t * state){
+int cbd_blocks_src_istep(int out, int A, int t, const char * name, sim_state_t * state){
     const int pin[1] = {state->time};
     const int pout[1] = {out};
     const int params[2] = {A, t};
-    int block = cbd_block_add(name, pin, 1, pout, 1, params, 2, SRC_STEP, 0, state);
+    int block = cbd_block_add(name, pin, 1, pout, 1, params, 2, SRC_ISTEP, 0, state);
 
     return block;
 }

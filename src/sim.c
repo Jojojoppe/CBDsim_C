@@ -1,4 +1,5 @@
 #include "sim.h"
+#include "cbd/block.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -19,6 +20,10 @@ void sim_init(sim_state_t * state, double timestep){
 
     D_ARRAY_INIT(int, &state->eval_order);
     D_ARRAY_INIT(int, &state->watchlist);
+
+    // Create eval function array
+    state->cbd_block_eval_functions = calloc(_CBD_BLOCK_FUNCTION_SIZE, sizeof(void **));
+    cbd_block_register_eval_functions(state);
 
     state->plotter = popen("./plot", "w");
 }
@@ -57,6 +62,7 @@ void sim_deinit(sim_state_t * state){
 
     fprintf(state->plotter, "X\n");
     pclose(state->plotter);
+    free(state->cbd_block_eval_functions);
 }
 
 int sim_add_name(const char * name, sim_state_t * state){
@@ -208,8 +214,10 @@ void sim_run(double runtime, sim_state_t * state){
     }
     fprintf(state->plotter, "\n");
 
+    double starttime = *time;
+
     fprintf(state->plotter, "data\n");
-    while(*time<=runtime){
+    while(*time<=runtime+starttime){
 
         for(int i=0; i<state->eval_order.filled_size; i++){
             int b_i = *(int*)d_array_at(&state->eval_order, i);
@@ -228,4 +236,58 @@ void sim_run(double runtime, sim_state_t * state){
     fprintf(state->plotter, "e\n");
 
     d_array_deinit(&watch_values);
+}
+
+void sim_serialize(const char * fname, sim_state_t * state){
+    FILE * f = fopen(fname, "w");
+    // Write sizes of arrays on one line
+    fprintf(f, "%08d ", state->names.filled_size);
+    fprintf(f, "%08d ", state->values.filled_size);
+    fprintf(f, "%08d ", state->arrays.filled_size);
+    fprintf(f, "%08d ", state->cbd_signals.filled_size);
+    fprintf(f, "%08d ", state->cbd_params.filled_size);
+    fprintf(f, "%08d\n", state->cbd_blocks.filled_size);
+
+    // Write names (one per line)
+    // TODO make safe -> encode
+    for(int i=0; i<state->names.filled_size; i++){
+        char * name = *(char**)d_array_at(&state->names, i);
+        fprintf(f, "%s\n", name);
+    }
+
+    // Write values (one per line)
+    for(int i=0; i<state->values.filled_size; i++){
+        double * value = d_array_at(&state->values, i);
+        fprintf(f, "%e\n", *value);
+    }
+
+    // Write arrays (one per line)
+    for(int i=0; i<state->arrays.filled_size; i++){
+        d_array_t * arr = d_array_at(&state->arrays, i);
+        for(int j=0; j<arr->filled_size; j++){
+            int index = *(int*)d_array_at(arr, j);
+            fprintf(f, "%08d ", index);
+        }
+        fprintf(f, "\n");
+    }
+
+    // Write signals (one per line)
+    for(int i=0; i<state->cbd_signals.filled_size; i++){
+        cbd_signal_t * sig = d_array_at(&state->cbd_signals, i);
+        fprintf(f, "%08d %08d\n", sig->name, sig->value);
+    }
+
+    // Write params (one per line)
+    for(int i=0; i<state->cbd_params.filled_size; i++){
+        cbd_param_t * par = d_array_at(&state->cbd_params, i);
+        fprintf(f, "%08d %08d\n", par->name, par->value);
+    }
+
+    // Write blocks (one per line)
+    for(int i=0; i<state->cbd_blocks.filled_size; i++){
+        cbd_block_t * block = d_array_at(&state->cbd_blocks, i);
+        fprintf(f, "%08d %08d %08d %08d %08d %08d\n", block->ports_in, block->ports_out, block->params, block->name, block->depchain_break, block->eval_num);
+    }
+
+    fclose(f);
 }

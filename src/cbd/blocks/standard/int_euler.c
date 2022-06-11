@@ -62,7 +62,7 @@ int cbd_block_standard_int_euler(int in, int out, int initial, const char * name
     const int pin[2] = {in, intstate};
     const int pout[2] = {out, intstate};
     const int params[1] = {initial};
-    int block = cbd_block_add(name, pin, 2, pout, 2, params, 1, eval_int_euler, 1, state);
+    int block = cbd_block_add(name, pin, 2, pout, 2, params, 1, STANDARD_INT_EULER, 1, state);
 
     return block;
 }
