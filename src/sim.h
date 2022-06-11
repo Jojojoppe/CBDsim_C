@@ -28,6 +28,7 @@ typedef struct sim_state_s {
     FILE * plotter;
 
     void (**cbd_block_eval_functions)(cbd_block_t * block, struct sim_state_s * state);
+    int _initialized;
 } sim_state_t;
 
 void sim_init(sim_state_t * state, double timestep);
@@ -46,6 +47,9 @@ void sim_csv(const char * options, sim_state_t * state);
 void sim_run(double runtime, sim_state_t * state);
 
 void sim_serialize(const char * fname, sim_state_t * state);
+void sim_load(const char * fname, double timestep, sim_state_t * state);
+
+int sim_get_signal(const char * name, sim_state_t * state);
 
 void dbg_sim_printall(sim_state_t * state);
 

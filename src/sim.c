@@ -26,9 +26,11 @@ void sim_init(sim_state_t * state, double timestep){
     cbd_block_register_eval_functions(state);
 
     state->plotter = popen("./plot", "w");
+    state->_initialized = 1;
 }
 
 void sim_deinit(sim_state_t * state){
+    if(!state->_initialized) return;
     // Deinitialize arrays array
     for(int i=0; i<state->arrays.filled_size; i++){
         d_array_deinit(d_array_at(&state->arrays, i));
@@ -63,6 +65,7 @@ void sim_deinit(sim_state_t * state){
     fprintf(state->plotter, "X\n");
     pclose(state->plotter);
     free(state->cbd_block_eval_functions);
+    state->_initialized = 0;
 }
 
 int sim_add_name(const char * name, sim_state_t * state){
@@ -241,47 +244,54 @@ void sim_run(double runtime, sim_state_t * state){
 void sim_serialize(const char * fname, sim_state_t * state){
     FILE * f = fopen(fname, "w");
     // Write sizes of arrays on one line
-    fprintf(f, "%08d ", state->names.filled_size);
-    fprintf(f, "%08d ", state->values.filled_size);
+    fprintf(f, "%08d ", state->names.filled_size-2);
+    fprintf(f, "%08d ", state->values.filled_size-2);
     fprintf(f, "%08d ", state->arrays.filled_size);
-    fprintf(f, "%08d ", state->cbd_signals.filled_size);
-    fprintf(f, "%08d ", state->cbd_params.filled_size);
+    fprintf(f, "%08d ", state->cbd_signals.filled_size-1);
+    fprintf(f, "%08d ", state->cbd_params.filled_size-1);
     fprintf(f, "%08d\n", state->cbd_blocks.filled_size);
+    fprintf(f, "\n");
 
-    // Write names (one per line)
+    // Write names (one per line) (skip time and timestep)
     // TODO make safe -> encode
-    for(int i=0; i<state->names.filled_size; i++){
+    for(int i=2; i<state->names.filled_size; i++){
         char * name = *(char**)d_array_at(&state->names, i);
         fprintf(f, "%s\n", name);
     }
+    fprintf(f, "\n");
 
-    // Write values (one per line)
-    for(int i=0; i<state->values.filled_size; i++){
+    // Write values (one per line) (skip time and timestep)
+    for(int i=2; i<state->values.filled_size; i++){
         double * value = d_array_at(&state->values, i);
         fprintf(f, "%e\n", *value);
     }
+    fprintf(f, "\n");
 
     // Write arrays (one per line)
     for(int i=0; i<state->arrays.filled_size; i++){
         d_array_t * arr = d_array_at(&state->arrays, i);
+        fprintf(f, "%08d ", arr->filled_size);
         for(int j=0; j<arr->filled_size; j++){
             int index = *(int*)d_array_at(arr, j);
             fprintf(f, "%08d ", index);
         }
         fprintf(f, "\n");
     }
+    fprintf(f, "\n");
 
-    // Write signals (one per line)
-    for(int i=0; i<state->cbd_signals.filled_size; i++){
+    // Write signals (one per line) (skip time)
+    for(int i=1; i<state->cbd_signals.filled_size; i++){
         cbd_signal_t * sig = d_array_at(&state->cbd_signals, i);
         fprintf(f, "%08d %08d\n", sig->name, sig->value);
     }
+    fprintf(f, "\n");
 
-    // Write params (one per line)
-    for(int i=0; i<state->cbd_params.filled_size; i++){
+    // Write params (one per line) (skip timestep)
+    for(int i=1; i<state->cbd_params.filled_size; i++){
         cbd_param_t * par = d_array_at(&state->cbd_params, i);
         fprintf(f, "%08d %08d\n", par->name, par->value);
     }
+    fprintf(f, "\n");
 
     // Write blocks (one per line)
     for(int i=0; i<state->cbd_blocks.filled_size; i++){
@@ -290,4 +300,96 @@ void sim_serialize(const char * fname, sim_state_t * state){
     }
 
     fclose(f);
+}
+
+void sim_load(const char * fname, double timestep, sim_state_t * state){
+    // Reinitialize sim_state
+    sim_init(state, timestep);
+
+    FILE * f = fopen(fname, "r");
+
+    int names, values, arrays, signals, parameters, blocks;
+    fscanf(f, "%d %d %d %d %d %d\n", &names, &values, &arrays, &signals, &parameters, &blocks);
+
+    // Read names
+    for(int i=0; i<names; i++){
+        char name[256];
+        fscanf(f, "%s\n", name);
+        sim_add_name(name, state);
+    }
+
+    // Read values
+    for(int i=0; i<values; i++){
+        float value;
+        fscanf(f, "%e\n", &value);
+        sim_add_value(value, state);
+    }
+
+    // Read arrays
+    for(int i=0; i<arrays; i++){
+        int arsize;
+        fscanf(f, "%d ", &arsize);
+        int * array = calloc(arsize, sizeof(int));
+        for(int j=0; j<arsize; j++){
+            fscanf(f, "%d", array+j);
+        }
+        sim_add_array(array, arsize, state);
+        free(array);
+    }
+
+    // Read signals
+    for(int i=0; i<signals; i++){
+        int name, value;
+        fscanf(f, "%d %d\n", &name, &value);
+        // Create signal object
+        // TODO move to signal file
+        cbd_signal_t sig = {
+            value,
+            name
+        };
+        d_array_insert(&state->cbd_signals, &sig);
+    }
+
+    // Read params
+    for(int i=0; i<parameters; i++){
+        int name, value;
+        fscanf(f, "%d %d\n", &name, &value);
+        // Create signal object
+        // TODO move to params file
+        cbd_param_t par = {
+            value,
+            name
+        };
+        d_array_insert(&state->cbd_params, &par);
+    }
+
+    // Read blocks
+    for(int i=0; i<blocks; i++){
+        int pin, pout, params, name, depchain_break, eval_num;
+        fscanf(f, "%d %d %d %d %d %d\n", &pin, &pout, &params, &name, &depchain_break, &eval_num);
+        // Create block object
+        // TODO move to block file
+        cbd_block_t block = {
+            pin,
+            pout,
+            params,
+            name,
+            NULL,
+            state->cbd_block_eval_functions[eval_num],
+            eval_num,
+            depchain_break,
+        };
+        d_array_insert(&state->cbd_blocks, &block);
+    }
+
+    fclose(f);
+}
+
+int sim_get_signal(const char * name, sim_state_t * state){
+    for(int i=1; i<state->cbd_signals.filled_size; i++){
+        cbd_signal_t * sig = d_array_at(&state->cbd_signals, i);
+        char * sname = *(char**)d_array_at(&state->names, sig->name);
+        if(!strcmp(name, sname)) return i;
+    }
+    return -1;
 }

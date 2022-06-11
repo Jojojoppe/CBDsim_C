@@ -12,8 +12,6 @@ int cbd_block_add(const char * name, const int * ports_in, int ports_in_n, const
     // Add params
     int pa_index = sim_add_array(params, params_n, state);
 
-    void (*eval)(cbd_block_t* , sim_state_t *);
-
     // Create block object
     cbd_block_t block = {
         pi_index,
