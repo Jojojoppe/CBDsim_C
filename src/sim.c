@@ -393,3 +393,63 @@ int sim_get_signal(const char * name, sim_state_t * state){
     }
     return -1;
 }
+
+void sim_viz(sim_state_t * state){
+    FILE * f = popen("dot -Tpng > output.png", "w");
+
+    fprintf(f, "digraph G {\n\tsplines=\"FALSE\";\n");
+    
+    for(int i=0; i<state->cbd_blocks.filled_size; i++){
+        cbd_block_t * block = d_array_at(&state->cbd_blocks, i);
+        char * name = *(char**)d_array_at(&state->names, block->name);
+        if(block->eval_num==STANDARD_PLUSMIN){
+            fprintf(f, "\t%s [label=\"+\", shape=\"circle\"]\n", name);
+        }else if(block->eval_num==STANDARD_MULDIV){
+            fprintf(f, "\t%s [label=\"x\", shape=\"circle\"]\n", name);
+        }else{
+            fprintf(f, "\t%s [label=\"%s\", shape=\"square\"]\n", name, name);
+        }
+    }
+
+    // Map signals to blocks
+    int * sig_from = malloc(sizeof(int)*state->cbd_signals.filled_size);
+    d_array_t * sig_to = malloc(sizeof(d_array_t)*state->cbd_signals.filled_size);
+    for(int i=0; i<state->cbd_signals.filled_size; i++) D_ARRAY_INIT(int, &sig_to[i]);
+    // Set time coming from nowhere
+    sig_from[state->time] = -1;
+    // Loop over blocks to create mapping
+    for(int i=0; i<state->cbd_blocks.filled_size; i++){
+        cbd_block_t * block = d_array_at(&state->cbd_blocks, i);
+        d_array_t * pin = (d_array_t*)d_array_at(&state->arrays, block->ports_in);
+        d_array_t * pout = (d_array_t*)d_array_at(&state->arrays, block->ports_out);
+        // Set from values
+        for(int j=0; j<pout->filled_size; j++){
+            int sig = *(int*)d_array_at(pout, j);
+            sig_from[sig] = i;
+        };
+        // Add block to to values
+        for(int j=0; j<pin->filled_size; j++){
+            int sig = *(int*)d_array_at(pin, j);
+            d_array_insert(&sig_to[sig], &i);
+        };
+    }
+
+    for(int i=1; i<state->cbd_signals.filled_size; i++){
+        cbd_signal_t * sig = d_array_at(&state->cbd_signals, i);
+        char * name = *(char**)d_array_at(&state->names, sig->name);
+        cbd_block_t * from = d_array_at(&state->cbd_blocks, sig_from[i]);
+        char * fromname = *(char**)d_array_at(&state->names, from->name);
+        for(int j=0; j<sig_to[i].filled_size; j++){
+            cbd_block_t * to = d_array_at(&state->cbd_blocks, *(int*)d_array_at(&sig_to[i], j));
+            char * toname = *(char**)d_array_at(&state->names, to->name);
+            fprintf(f, "\t%s -> %s [label=\"%s\"];\n", fromname, toname, name);
+        }
+    }
+
+    free(sig_from);
+    for(int i=0; i<state->cbd_signals.filled_size; i++) d_array_deinit(&sig_to[i]);
+    free(sig_to);
+
+    fprintf(f, "}");
+    pclose(f);
+}

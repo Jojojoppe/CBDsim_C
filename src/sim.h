@@ -44,6 +44,8 @@ void sim_watch_signal(int signal, sim_state_t * state);
 void sim_plot(const char * options, sim_state_t * state);
 void sim_csv(const char * options, sim_state_t * state);
 
+void sim_viz(sim_state_t * state);
+
 void sim_run(double runtime, sim_state_t * state);
 
 void sim_serialize(const char * fname, sim_state_t * state);
