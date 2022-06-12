@@ -130,21 +130,19 @@ typedef struct{
     double state;
     double prev;
     double prev2;
-    double prev3;
 } integral_rk4_state_t;
 d_array_t integral_rk4_states;
 int integral_rk4_minorcounter;
 double integral_rk4(double input, double initial, int integral_nr){
     if(integral_rk4_states.filled_size<=integral_nr){
         // New integral encountered: expand array
-        integral_rk4_state_t s = {initial, 0.0, 0.0};
+        integral_rk4_state_t s = {initial, input, input};
         d_array_insert(&integral_rk4_states, &s);
     }
 
     integral_rk4_state_t * state = d_array_at(&integral_rk4_states, integral_nr);
 
-    state->state = state->state + timestep/3 * (input/2 + state->prev + state->prev2 + state->prev3/2);
-    state->prev3 = state->prev2;
+    state->state = state->state + timestep/6 * (state->prev2 + 4*state->prev + input);
     state->prev2 = state->prev;
     state->prev = input;
     double output = state->state;
@@ -153,15 +151,15 @@ double integral_rk4(double input, double initial, int integral_nr){
 }
 void integral_rk4_init(double _timestep){
     time = 0.0;
-    timestep = _timestep/4; // Three minor step ->  steps per major timestep
+    timestep = _timestep/3; // Two minor step -> 3 steps per major timestep
     major = 0;
     minor = -1;
-    integral_rk4_minorcounter = 2;
+    integral_rk4_minorcounter = 1;
     D_ARRAY_INIT(integral_rk4_state_t, &integral_rk4_states);
 }
 void integral_rk4_startround(){
     if(minor){
-        if(integral_rk4_minorcounter<2){
+        if(integral_rk4_minorcounter<1){
             integral_rk4_minorcounter++;
         }else{
             minor = ~minor;
@@ -205,12 +203,12 @@ int main(int argc, char ** argv){
     fprintf(plotter, "\n");
     fprintf(plotter, "data\n");
 
-    integral_rk4_init(0.1);
+    integral_euler_init(0.1);
     init();
     while(time<=runtime){
-        integral_rk4_startround();
+        integral_euler_startround();
 
-        step(integral_rk4);
+        step(integral_euler);
 
         if(major){
             fprintf(plotter, "%e %e ", time, timestep);
@@ -218,13 +216,13 @@ int main(int argc, char ** argv){
             fprintf(plotter, "\n");
         }
 
-        integral_rk4_endround();
+        integral_euler_endround();
     }
 
     fprintf(plotter, "e\n");
 
     fprintf(plotter, "plot 1,1 x:time y:s4:label:f yrange:-1.5:1.5 p\n");
-    fprintf(plotter, "csv rk4.csv time s4\n");
+    fprintf(plotter, "csv euler.csv time s4\n");
 
     fprintf(plotter, "X\n");
     pclose(plotter);
