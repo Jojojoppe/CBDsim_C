@@ -61,6 +61,7 @@ while True:
             plotnr = 0
             stepped = False
             yrange = None
+            xrange = None
 
             for t in s_in[2:]:
 
@@ -91,6 +92,9 @@ while True:
                 elif t.startswith("yrange:"):
                     yrange = t.split(':')[1:]
 
+                elif t.startswith("xrange:"):
+                    xrange = t.split(':')[1:]
+
                 elif t=="p":
                     sp = ax[plotnr-1]
                     for yname, opt in options.items():
@@ -111,6 +115,8 @@ while True:
                     sp.set_xbound(min(cols[colindex[xname]]), max(cols[colindex[xname]]))
                     if yrange is not None:
                         sp.set_ylim(float(yrange[0]), float(yrange[1]))
+                    if xrange is not None:
+                        sp.set_xlim(float(xrange[0]), float(xrange[1]))
 
             plt.show()
 

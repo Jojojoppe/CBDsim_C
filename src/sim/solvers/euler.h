@@ -2,7 +2,7 @@
 #define __H_SOLVERS_EULER
 
 #include "../solver.h"
-#include "../dynamic_array.h"
+#include "../../dynamic_array.h"
 
 const extern solver_t solver_euler;
 
