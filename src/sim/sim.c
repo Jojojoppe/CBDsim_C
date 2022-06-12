@@ -33,11 +33,9 @@ int sim_compile_model(const char * modelcfile, const char * modelfile, sim_state
     if(!state) return -1;
     int modelcfile_len = strlen(modelcfile);
     int modelfile_len = strlen(modelfile);
-    const char * cmd = "cc -pie -shared -o %s %s";
-    int cmd_len = strlen(cmd);
-    char * totalcmd = malloc(cmd_len + modelcfile_len + modelfile_len + 16);
+    char * totalcmd = malloc(modelcfile_len + modelfile_len + 64);
 
-    sprintf(totalcmd, cmd, modelfile, modelcfile);
+    sprintf(totalcmd, "cc -pie -shared -o \"%s\" \"%s\"", modelfile, modelcfile);
 
     int r = system(totalcmd);
 
@@ -62,15 +60,15 @@ int sim_load_model(const char * modelfile, sim_state_t * state){
     if(!state->model) return -1;
 
     state->model_values = dlsym(state->model, "values");
-    if(dlerror()) return -1;
+    if(dlerror()) return -2;
     state->model_value_name = dlsym(state->model, "value_name");
-    if(dlerror()) return -1;
+    if(dlerror()) return -3;
     state->model_value_init = dlsym(state->model, "value_init");
-    if(dlerror()) return -1;
+    if(dlerror()) return -4;
     state->model_init = dlsym(state->model, "init");
-    if(dlerror()) return -1;
+    if(dlerror()) return -5;
     state->model_step = dlsym(state->model, "step");
-    if(dlerror()) return -1;
+    if(dlerror()) return -6;
 
     return 0;
 }

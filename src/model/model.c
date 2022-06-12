@@ -46,10 +46,15 @@ int model_add_param(const char * name, double value, model_t * model){
     return D_ARRAY_LEN(model->params)-1;
 }
 
-int model_add_block(const int * ports_in, size_t ports_in_n, const int * ports_out, size_t ports_out_n, const int * parameters, size_t parameters_n, const char * name, const char * type, int statefull, void (*generate)(FILE* f, block_t * block), model_t * model){
+int model_add_block(const int * ports_in, size_t ports_in_n, const int * ports_out, size_t ports_out_n, 
+            const int * parameters, size_t parameters_n, const char * name, const char * type, int statefull, 
+            void (*generate)(FILE* f, block_t * block), void (*generate_init)(FILE* f, block_t * block), model_t * model)
+        {
     if(!model) return -1;
     // TODO use hashmap to store name->id pairs
-    block_t * s = block_init(ports_in, ports_in_n, ports_out, ports_out_n, parameters, parameters_n, name, type, statefull, generate);
+    block_t * s = block_init(ports_in, ports_in_n, ports_out, ports_out_n, parameters, parameters_n, 
+        name, type, statefull, generate, generate_init
+    );
     d_array_insert(&model->blocks, &s);
     return D_ARRAY_LEN(model->blocks)-1;
 }

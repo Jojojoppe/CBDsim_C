@@ -8,6 +8,7 @@ src_c = src/dynamic_array.c \
     src/model/param.c \
     src/model/block.c \
     src/model/model.c \
+    src/model/compile.c \
     src/model/blocks/src/sine.c \
     src/model/blocks/src/cosine.c \
     src/main.c

@@ -11,14 +11,15 @@ int run_sim(){
     sim_state_t * state = sim_init(&solver_euler, &sparams);
 
     // Compile model
-    if(sim_compile_model("TESTMODEL.c", "model.so", state)){
+    if(sim_compile_model("TM.c", "model.so", state)){
         printf("Could not compile model\n");
         sim_deinit(state);
         return 1;
     }
     // Load model
-    if(sim_load_model("model.so", state)){
-        printf("Could not load model\n");
+    int e;
+    if((e = sim_load_model("model.so", state))){
+        printf("Could not load model: %d\n", e);
         sim_deinit(state);
         return 1;
     }
@@ -30,7 +31,7 @@ int run_sim(){
     }
 
     sim_run(10.0, state);
-    sim_plot("1,1 x:time y:f p", state);
+    sim_plot("1,1 x:time y:in p", state);
 
     sim_deinit(state);
     return 0;
@@ -66,8 +67,11 @@ int main(int argc, char ** argv){
         generate(stdout, D_ARRAY_ATV(block_t*, &model->blocks, i));
     }
 
+    model_compile("TM.c", model);
+
     model_deinit(model);
 
-    // int r = run_sim();
+    printf("\nRunning:\n");
+    int r = run_sim();
     return 0;
 }

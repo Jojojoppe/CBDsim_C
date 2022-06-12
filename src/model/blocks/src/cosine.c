@@ -13,6 +13,9 @@ void src_cosine_generate(FILE * f, block_t * block){
     fprintf(f, "signals[%d] = params[%d]*cos(2*M_PI*params[%d]*time);\n", out, pA, pf);
 }
 
+void src_cosine_generate_init(FILE * f, block_t * block){
+}
+
 int blocks_add_src_cosine(double A, double f, const char * name, int out, model_t * model){
     // Create parameters
     char * pAname = calloc(1, strlen(name)+strlen("/A")+1);
@@ -28,6 +31,6 @@ int blocks_add_src_cosine(double A, double f, const char * name, int out, model_
     const int pout[1] = {out};
     const int params[2] = {pA, pf};
     return model_add_block(pin, 0, pout, 1, params, 2, name, 
-        "src/cosine", 0, src_cosine_generate, model
+        "src/cosine", 0, src_cosine_generate, src_cosine_generate_init, model
     );
 }
