@@ -1,58 +1,34 @@
 #ifndef __H_SIM
 #define __H_SIM
 
-#include "dynamic_array.h"
-#include "cbd/signal.h"
-#include "cbd/param.h"
-#include "cbd/block.h"
-
-#include <stdio.h>
+#include "solver.h"
 
 typedef struct sim_state_s {
-    // Layout
-    // ------
-    d_array_t names;            // char*[]
-    d_array_t values;           // double[]
-    d_array_t arrays;           // d_array_t(int)[]
+    // Solver information
+    solver_t * solver;
+    void * solver_state;
 
-    d_array_t cbd_signals;      // cbd_signal_t[]
-    d_array_t cbd_params;       // cbd_param_t[]
-    d_array_t cbd_blocks;       // cbd_blocks_t[]
-    // ------
+    // Model information
+    void * model;
+    int (*model_values)();
+    char * (*model_value_name)(int);
+    double (*model_value_init)(int);
+    void (*model_init)(double*);
+    double (*model_step)(double*,int,int,double,double,solver_integrate,void*);
 
-    int time, timestep;
-
-    d_array_t eval_order;
-    d_array_t watchlist;
-
-    FILE * plotter;
-
-    void (**cbd_block_eval_functions)(cbd_block_t * block, struct sim_state_s * state);
-    int _compiled;
+    // Run information
+    double * values;
+    double time, timestep;
+    int major, minor;
 } sim_state_t;
 
-void sim_init(sim_state_t * state, double timestep);
+sim_state_t * sim_init(solver_t * solver, void * solver_params);
 void sim_deinit(sim_state_t * state);
 
-int sim_add_name(const char * name, sim_state_t * state);
-int sim_add_value(const double v, sim_state_t * state);
-int sim_add_array(const int * vals, int vals_n, sim_state_t * state);
+int sim_compile_model(const char * modelcfile, const char * modelfile, sim_state_t * state);
+int sim_load_model(const char * modelfile, sim_state_t * state);
 
-void sim_compile(sim_state_t * state);
-
-void sim_watch_signal(int signal, sim_state_t * state);
-void sim_plot(const char * options, sim_state_t * state);
-void sim_csv(const char * options, sim_state_t * state);
-
-void sim_viz(sim_state_t * state);
-
-void sim_run(double runtime, sim_state_t * state);
-
-void sim_serialize(const char * fname, sim_state_t * state);
-void sim_load(const char * fname, double timestep, sim_state_t * state);
-
-int sim_get_signal(const char * name, sim_state_t * state);
-
-void dbg_sim_printall(sim_state_t * state);
+void sim_init_run(sim_state_t * state);
+void sim_step(sim_state_t * state);
 
 #endif

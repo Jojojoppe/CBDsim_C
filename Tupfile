@@ -1,31 +1,13 @@
 include_rules
 
-# src_c = src/dynamic_array.c \
-#     src/cbd/signal.c \
-#     src/cbd/block.c \
-#     src/cbd/param.c \
-#     src/cbd/blocks/src/sin.c \
-#     src/cbd/blocks/src/cos.c \
-#     src/cbd/blocks/src/step.c \
-#     src/cbd/blocks/src/istep.c \
-#     src/cbd/blocks/src/pulse.c \
-#     src/cbd/blocks/src/constant.c \
-#     src/cbd/blocks/standard/plusmin.c \
-#     src/cbd/blocks/standard/muldiv.c \
-#     src/cbd/blocks/standard/int_euler.c \
-#     src/cbd/blocks/standard/int_trap.c \
-#     src/cbd/blocks/standard/int_rk4.c \
-#     src/cbd/blocks/standard/gain.c \
-#     src/cbd/blocks/standard/exp.c \
-#     src/sim.c \
-#     src/main.c
-
 src_c = src/dynamic_array.c \
-    src/modeltest.c
+    src/solvers/euler.c \
+    src/sim.c \
+    src/main.c
 
 CFLAGS += -g
 LDFLAGS += -g
-LDLIBS += -lm
+LDLIBS += -lm -ldl
 
 : foreach $(src_c) |> !cc |> out/%B.o
 : out/*.o |> !ld |> out/main
