@@ -53,6 +53,8 @@ while True:
             if type(ax) is not np.ndarray:
                 ax = [ax]
             plotnr = 0
+            stepped = False
+            yrange = None
 
             for t in s_in[2:]:
 
@@ -74,20 +76,35 @@ while True:
                                 o_current = "color"
                             elif o=="label":
                                 o_current = "label"
+                            elif o=="ls":
+                                o_current = "ls"
+
+                elif t=="step":
+                    stepped = True
+
+                elif t.startswith("yrange:"):
+                    yrange = t.split(':')[1:]
 
                 elif t=="p":
                     sp = ax[plotnr-1]
                     for yname, opt in options.items():
-                        line, = sp.plot(cols[colindex[xname]], cols[colindex[yname]], label=yname)
+                        if stepped:
+                            line, = sp.step(cols[colindex[xname]], cols[colindex[yname]], label=yname, where='post')
+                        else:
+                            line, = sp.plot(cols[colindex[xname]], cols[colindex[yname]], label=yname)
                         for oname, oval in opt.items():
                             if oname=="color":
                                 line.set_color(oval)
                             elif oname=="label":
                                 line.set_label(oval)
+                            elif oname=="ls":
+                                line.set_linestyle(oval)
                     sp.set_xlabel(xname)
                     sp.legend(loc='upper right')
                     sp.grid(visible=True, which='both')
                     sp.set_xbound(min(cols[colindex[xname]]), max(cols[colindex[xname]]))
+                    if yrange is not None:
+                        sp.set_ylim(float(yrange[0]), float(yrange[1]))
 
             plt.show()
 

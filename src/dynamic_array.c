@@ -7,7 +7,7 @@ d_array_error_t d_array_init(d_array_t * array, size_t elem_size){
     if(array==NULL || elem_size<=0)
         return D_ARRAY_ERROR_PARAM;
 
-    void * array_data = malloc(elem_size*D_ARRAY_START_SIZE);
+    void * array_data = calloc(D_ARRAY_START_SIZE, elem_size);
     if(array_data==NULL)
         return D_ARRAY_ERROR_ALLOC;
 
@@ -99,7 +99,7 @@ d_array_error_t d_array_resize(d_array_t * array, size_t size){
         if(to_copy>size)
             to_copy = size;
 
-        void * new_begin = malloc(size*array->elem_size);
+        void * new_begin = calloc(size, array->elem_size);
         if(new_begin==NULL)
             return D_ARRAY_ERROR_ALLOC;
 

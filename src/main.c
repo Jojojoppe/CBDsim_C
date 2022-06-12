@@ -49,6 +49,11 @@ int main(int argc, char ** argv){
 
     sim_compile(&state);
 
+    for(int i=0; i<state.eval_order.filled_size; i++){
+        printf("%d ", *(int*)d_array_at(&state.eval_order, i));
+    }
+    printf("\n");
+
     sim_watch_signal(state.time, &state);
     sim_watch_signal(s_ein, &state);
     sim_watch_signal(s_e2, &state);
