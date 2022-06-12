@@ -2,6 +2,7 @@
 #define __H_SIM
 
 #include "solver.h"
+#include "visualizer.h"
 
 typedef struct sim_state_s {
     // Solver information
@@ -20,6 +21,9 @@ typedef struct sim_state_s {
     double * values;
     double time, timestep;
     int major, minor;
+
+    // Visualizer
+    visualizer_t * vis;
 } sim_state_t;
 
 sim_state_t * sim_init(solver_t * solver, void * solver_params);
@@ -30,5 +34,9 @@ int sim_load_model(const char * modelfile, sim_state_t * state);
 
 void sim_init_run(sim_state_t * state);
 void sim_step(sim_state_t * state);
+void sim_run(double runtime, sim_state_t * state);
+
+void sim_plot(const char * options, sim_state_t * state);
+void sim_csv(const char * options, sim_state_t * state);
 
 #endif

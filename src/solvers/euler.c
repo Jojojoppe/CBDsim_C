@@ -16,6 +16,13 @@ void solver_euler_deinit(void * _state){
     free(state);
 }
 
+void solver_euler_reset(void * _state){
+    solver_euler_state_t * state = (solver_euler_state_t*) _state;
+    for(int i=0; i<D_ARRAY_LEN(state->states); i++){
+        (D_ARRAY_DP(double, state->states))[i] = 0.0;
+    }
+}
+
 void solver_euler_start_step(void * _state){
     solver_euler_state_t * state = (solver_euler_state_t*) _state;
 }
@@ -36,6 +43,7 @@ double solver_euler_integrate(double input, double initial, int nr, void * _stat
 const solver_t solver_euler = {
     solver_euler_init,
     solver_euler_deinit,
+    solver_euler_reset,
     solver_euler_start_step,
     solver_euler_stop_step,
     solver_euler_integrate,

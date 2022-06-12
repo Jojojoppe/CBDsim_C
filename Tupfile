@@ -2,6 +2,7 @@ include_rules
 
 src_c = src/dynamic_array.c \
     src/solvers/euler.c \
+    src/visualizer.c \
     src/sim.c \
     src/main.c
 

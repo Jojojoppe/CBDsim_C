@@ -11,7 +11,12 @@ cols = []
 
 while True:
     s_in = input()
+
     s_in = s_in.split()
+    if len(s_in)<1:
+        continue
+
+    # print(s_in)
 
     if s_in[0]=="X":
         break
@@ -27,6 +32,7 @@ while True:
                 cols.append([])
             for i, colname in enumerate(colnames):
                 colindex[colname] = i
+            plt.close('all')
 
         elif s_in[0]=="data":
             state="data"

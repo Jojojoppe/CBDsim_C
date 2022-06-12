@@ -6,13 +6,14 @@ typedef double (*integral_f)(double,double,int,void*);
 // ----------------------------
 
 int values(){
-    return 14;
+    return 16;
 }
 
 char * value_name(int i){
     char * names[] = {
-        "e1", "e2", "e3", "e4", "f", "q3", "p2",
-        "sA", "sf", "iIi", "iCi", "IK", "CK", "RK",
+        "e1", "e2", "e3", "e4", "f", "q3", "p2", 
+        "sA", "sf", "iIi", "iCi", "IK", "CK", "RK", 
+        "time", "timestep",
     };
     return names[i];
 }
@@ -20,7 +21,8 @@ char * value_name(int i){
 double value_init(int i){
     double initvals[] = {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-        1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.5,
+        1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.5, 
+        0.0, 0.0
     };
     return initvals[i];
 }
@@ -38,6 +40,8 @@ void init(double * values){
 void step(double * values, int major, int minor, double time, double timestep, integral_f integral, void * solver_state){
 
     int integral_nr = 0;
+    values[14] = time;
+    values[15] = timestep;
 
     // block 6: step
     if(time<=values[8]) values[0] = 0.0;

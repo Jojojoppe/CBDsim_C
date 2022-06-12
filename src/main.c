@@ -11,7 +11,7 @@ int main(int argc, char ** argv){
     sim_state_t * state = sim_init(&solver_euler, &sparams);
 
     // Compile model
-    if(sim_compile_model("src/TESTMODEL.c", "model.so", state)){
+    if(sim_compile_model("TESTMODEL.c", "model.so", state)){
         printf("Could not compile model\n");
         sim_deinit(state);
         return 1;
@@ -29,11 +29,15 @@ int main(int argc, char ** argv){
         printf("%s\t= %f\n", state->model_value_name(i), state->values[i]);
     }
 
-    while(state->time<10.0){
-        printf("\r%f", state->time);
-        sim_step(state);
-    }
-    printf("\n");
+    sim_run(10.0, state);
+    sim_plot("1,1 x:time y:f p", state);
+
+    sim_run(10.0, state);
+    sim_plot("1,1 x:time y:f p", state);
+
+    sim_init_run(state);
+    sim_run(10.0, state);
+    sim_plot("1,1 x:time y:f p", state);
 
     sim_deinit(state);
     return 0;

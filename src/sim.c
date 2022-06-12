@@ -11,7 +11,8 @@ sim_state_t * sim_init(solver_t * solver, void * solver_params){
     // Set solver info
     state->solver = solver;
     state->solver_state = solver->init(solver_params);
-    
+    // Set visualizer
+    state->vis = visualizer_init(); 
     return state;
 }
 
@@ -24,6 +25,7 @@ void sim_deinit(sim_state_t * state){
     if(state->values){
         free(state->values);
     }
+    visualizer_deinit(state->vis);
     free(state);
 }
 
@@ -92,8 +94,17 @@ void sim_init_run(sim_state_t * state){
         state->values[i] = state->model_value_init(i);
     }
 
+    // Reset solver
+    state->solver->reset(state->solver_state);
+
     // Initialize model
     state->model_init(state->values);
+
+    // Setup visualizer
+    visualizer_reset(state->vis);
+    for(int i=0; i<state->model_values(); i++){
+        visualizer_record_names(state->model_value_name(i), state->vis);
+    }
 }
 
 void sim_step(sim_state_t * state){
@@ -110,4 +121,25 @@ void sim_step(sim_state_t * state){
     state->minor = r.minor;
     state->timestep = r.timestep;
     state->time += r.timestep;
+}
+
+void sim_run(double runtime, sim_state_t * state){
+    if(!state) return; // TODO error handling
+    double starttime = state->time;
+    visualizer_record_start(state->vis);
+    while(state->time<=runtime+starttime){
+        sim_step(state);
+        visualizer_recordall(state->values, state->vis);
+    }
+    visualizer_record_end(state->vis);
+}
+
+void sim_plot(const char * options, sim_state_t * state){
+    if(!state) return; // TODO error handling
+    visualizer_plot(options, state->vis);
+}
+
+void sim_csv(const char * options, sim_state_t * state){
+    if(!state) return; // TODO error handling
+    visualizer_csv(options, state->vis);
 }
