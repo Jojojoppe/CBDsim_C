@@ -23,7 +23,13 @@ int blocks_add_std_integrate(double initial, const char * name, int in, int out,
     int pin[1] = {in};
     int pout[1] = {out};
     int params[1] = {pinitial};
-    return model_add_block(pin, 1, pout, 1, params, 1, name, 
+    int b = model_add_block(pin, 1, pout, 1, params, 1, name, 
         "std/integrate", 0, std_integrate_generate, std_integrate_generate_init, model
     );
+
+    // Set statefull
+    block_t * block = D_ARRAY_ATV(block_t *, &model->blocks, b);
+    block->statefull = 1;
+
+    return b;
 }

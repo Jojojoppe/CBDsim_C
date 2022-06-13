@@ -32,7 +32,9 @@ src_blocks_std = \
     src/model/blocks/std/cosine.c \
     src/model/blocks/std/tan.c \
     src/model/blocks/std/log.c \
-    src/model/blocks/std/exp.c
+    src/model/blocks/std/exp.c \
+    src/model/blocks/std/plusmin.c \
+    src/model/blocks/std/multdiv.c
 
 CFLAGS += -g
 LDFLAGS += -g

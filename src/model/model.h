@@ -27,4 +27,6 @@ int model_get_block(const char * name, model_t * model);
 
 int model_compile(const char * outfile, model_t * model);
 
+#define SIGNAL(name, model) int s_##name = model_add_signal(#name, model)
+
 #endif

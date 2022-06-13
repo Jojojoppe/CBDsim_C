@@ -12,6 +12,7 @@ block_t * block_init(int * ports_in, size_t ports_in_n, int * ports_out, size_t 
     D_ARRAY_INIT(int, &b->ports_in);
     D_ARRAY_INIT(int, &b->ports_out);
     D_ARRAY_INIT(int, &b->parameters);
+    D_ARRAY_INIT(int, &b->genparams_int);
     for(size_t i=0; i<ports_in_n; i++) d_array_insert(&b->ports_in, &ports_in[i]);
     for(size_t i=0; i<ports_out_n; i++) d_array_insert(&b->ports_out, &ports_out[i]);
     for(size_t i=0; i<parameters_n; i++) d_array_insert(&b->parameters, &parameters[i]);
@@ -34,6 +35,7 @@ void block_deinit(block_t * block){
     d_array_deinit(&block->ports_in);
     d_array_deinit(&block->ports_out);
     d_array_deinit(&block->parameters);
+    d_array_deinit(&block->genparams_int);
     free(block->name);
     free(block->type);
     free(block);

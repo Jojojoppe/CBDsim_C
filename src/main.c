@@ -1,69 +1,53 @@
 #include <stdio.h>
-#include <stdlib.h>
-
-#include "sim/solvers/euler.h"
-#include "sim/solver.h"
-#include "sim/sim.h"
-
-int run_sim(){
-    solver_euler_params_t sparams = {.timestep=0.01};
-    sim_state_t * state = sim_init(&solver_euler, &sparams, "./plot");
-
-    // Compile model
-    if(sim_compile_model("TM.c", "model.so", state)){
-        printf("Could not compile model\n");
-        sim_deinit(state);
-        return 1;
-    }
-    // Load model
-    int e;
-    if((e = sim_load_model("model.so", state))){
-        printf("Could not load model: %d\n", e);
-        sim_deinit(state);
-        return 1;
-    }
-
-    sim_init_run(state);
-
-    sim_plot_window("w0", "Some__Title", state);
-    sim_plot("w0", "p0", 121, "Some__Plot", state,
-        "xlabel:time legend",
-        2,
-        "time s1:src",
-        "time s2:out"
-    );
-    sim_plot("w0", "p1", 122, "Some__other__Plot", state,
-        "xlabel:src ylabel:out",
-        1,
-        "s1 s2"
-    );
-    // sim_csv_start("data.csv", state);
-
-    // sim_run_realtime(5.0, 30, 1, state);
-    sim_run(5.0, state);
-
-    sim_deinit(state);
-    return 0;
-}
 
 #include "model/model.h"
 #include "model/blocks/blocks.h"
-#include "dynamic_array.h"
+#include "sim/sim.h"
+#include "sim/solvers/euler.h"
 
 int main(int argc, char ** argv){
+    int error = 0;
 
+    // Generate model
     model_t * model = model_init();
 
-    int s_1 = model_add_signal("s1", model);
-    int s_2 = model_add_signal("s2", model);
-    int b_src = blocks_add_src_sine(1.0, 1.0, "src", s_1, model);
-    int b_tst = blocks_add_std_exp("tst", s_1, s_2, model);    
+    SIGNAL(e1, model);
+    SIGNAL(e2, model);
+    SIGNAL(e3, model);
+    SIGNAL(e4, model);
+    SIGNAL(f, model);
+    SIGNAL(q3, model);
+    SIGNAL(p2, model);
 
-    if(model_compile("TM.c", model)) return -1;
+    blocks_add_src_step(1, 10, "src", s_e1, model);
+    blocks_add_std_integrate(0.1, "iC", s_f, s_q3, model);
+    blocks_add_std_integrate(0.0, "iI", s_e2, s_p2, model);
+    blocks_add_std_attenuate(0.1, "KC", s_q3, s_e3, model);
+    blocks_add_std_attenuate(0.1, "KI", s_p2, s_f, model);
+    blocks_add_std_gain(0.1, "KR", s_f, s_e4, model);
+    blocks_add_std_plusmin("pm", (int[]){s_e1}, 1, (int[]){s_e3, s_e4}, 2, s_e2, model);
 
+    SIGNAL(q0, model);
+    blocks_add_src_constant(0, "zero", s_q0, model);
+
+    if((error = model_compile("TM.c", model))) goto end;
+    // Load model and run simulation
+    solver_euler_params_t sparams = {.timestep=0.01};
+    sim_state_t * state = sim_init(&solver_euler, &sparams, "./plot");
+
+    if((error = sim_compile_model("TM.c", "model.so", state))) goto end;
+    if((error = sim_load_model("model.so", state))) goto end;
+
+    sim_init_run(state);
+    sim_plot_window("w", NULL, state);
+    sim_plot("w", "pe", 221, NULL, state, "legend", 4, "time e1", "time e2", "time e3", "time e4");
+    sim_plot("w", "pf", 223, NULL, state, "legend", 1, "time f");
+    sim_plot("w", "pos", 222, NULL, state, "", 1, "q0 q3 style:None");
+
+    sim_run_realtime(20.0, 30, 1, state);
+
+end:
     model_deinit(model);
-
-    if(run_sim()) return -1;
-
-    return 0;
+    sim_deinit(state);
+    return error;
 }

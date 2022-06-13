@@ -151,6 +151,7 @@ while True and not _sigINT:
                 lastline, = ax.plot([cols[xname][-1]], [cols[yname][-1]], 'kx')
             else:
                 lastline, = ax.plot([0], [0], 'kx')
+            lastline.set_color(line.get_color())
             lines.append(line)
             lastlines.append(lastline)
             linecols.append((cols[xname], cols[yname]))

@@ -34,4 +34,7 @@ int blocks_add_std_tan(const char * name, int in, int out, model_t * model);
 int blocks_add_std_log(const char * name, int in, int out, model_t * model);
 int blocks_add_std_exp(const char * name, int in, int out, model_t * model);
 
+int blocks_add_std_plusmin(const char * name, int * pin, int pin_n, int * min, int min_n, int out, model_t * model);
+int blocks_add_std_multdiv(const char * name, int * pin, int pin_n, int * min, int min_n, int out, model_t * model);
+
 #endif
