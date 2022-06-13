@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from turtle import update
 import matplotlib.pyplot as plt
 import numpy as np
 import signal

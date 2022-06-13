@@ -9,6 +9,7 @@ typedef struct block_s {
     d_array_t ports_in;
     d_array_t ports_out;
     d_array_t parameters;
+    d_array_t variables;
     d_array_t genparams_int;
     char * name;
     char * type;

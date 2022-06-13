@@ -8,6 +8,7 @@ src_c = \
     src/sim/sim.c \
     src/model/signal.c \
     src/model/param.c \
+    src/model/variable.c \
     src/model/block.c \
     src/model/model.c \
     src/model/compile.c \

@@ -58,12 +58,15 @@ int model_evaluate(FILE * f, d_array_t * eval_order, model_t * model){
     fprintf(f, "#define INT(v, i) integral(v, i, integral_nr++, solver_state)\n\n");
 
     // Create values() function
-    fprintf(f, "int values(){\n\treturn %d;\n}\n\n", D_ARRAY_LEN(model->signals)+D_ARRAY_LEN(model->params));
+    fprintf(f, "int values(){\n\treturn %d;\n}\n\n", D_ARRAY_LEN(model->signals)+D_ARRAY_LEN(model->params)+D_ARRAY_LEN(model->variables));
 
     // Create value_name(int i) function
     fprintf(f, "char * value_name(int i){\n\tchar * names[] = {\n\t\t");
     for(int i=0; i<D_ARRAY_LEN(model->signals); i++){
         fprintf(f, "\"%s\", ", (D_ARRAY_ATV(signal_t*, &model->signals, i))->name);
+    }
+    for(int i=0; i<D_ARRAY_LEN(model->variables); i++){
+        fprintf(f, "\"%s\", ", (D_ARRAY_ATV(variable_t*, &model->variables, i))->name);
     }
     for(int i=0; i<D_ARRAY_LEN(model->params); i++){
         fprintf(f, "\"%s\", ", (D_ARRAY_ATV(param_t*, &model->params, i))->name);
@@ -75,6 +78,9 @@ int model_evaluate(FILE * f, d_array_t * eval_order, model_t * model){
     for(int i=0; i<D_ARRAY_LEN(model->signals); i++){
         fprintf(f, "0.0, ");
     }
+    for(int i=0; i<D_ARRAY_LEN(model->variables); i++){
+        fprintf(f, "0.0, ");
+    }
     for(int i=0; i<D_ARRAY_LEN(model->params); i++){
         fprintf(f, "%f, ", (D_ARRAY_ATV(param_t*, &model->params, i))->value);
     }
@@ -82,7 +88,7 @@ int model_evaluate(FILE * f, d_array_t * eval_order, model_t * model){
     
     // Create init function
     fprintf(f, "void init(double * values){\n");
-    fprintf(f, "int integral_nr = 0;\ndouble * signals = values;\ndouble * params = values+%d;\n", D_ARRAY_LEN(model->signals));
+    fprintf(f, "int integral_nr = 0;\ndouble * signals = values;\ndouble * vars = signals+%d;\ndouble * params = vars+%d;\n", D_ARRAY_LEN(model->signals), D_ARRAY_LEN(model->variables));
     // Evaluate all blocks in order
     for(int i=0; i<D_ARRAY_PLEN(eval_order); i++){
         int block_i = D_ARRAY_ATV(int, eval_order, i);
@@ -93,7 +99,7 @@ int model_evaluate(FILE * f, d_array_t * eval_order, model_t * model){
 
     // Create step function
     fprintf(f, "void step(double * values, int major, int minor, double time, double timestep, integral_f integral, void * solver_state){\n");
-    fprintf(f, "int integral_nr = 0;\ndouble * signals = values;\ndouble * params = values+%d;\n", D_ARRAY_LEN(model->signals));
+    fprintf(f, "int integral_nr = 0;\ndouble * signals = values;\ndouble * vars = signals+%d;\ndouble * params = vars+%d;\n", D_ARRAY_LEN(model->signals), D_ARRAY_LEN(model->variables));
     fprintf(f, "values[0] = time;\nvalues[1] = timestep;\n"); // FIXME not hardcoded?
     // Evaluate all blocks in order
     for(int i=0; i<D_ARRAY_PLEN(eval_order); i++){

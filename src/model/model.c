@@ -6,6 +6,7 @@
 model_t * model_init(){
     model_t * m = calloc(1, sizeof(model_t));
     D_ARRAY_INIT(signal_t*, &m->signals);
+    D_ARRAY_INIT(variable_t*, &m->variables);
     D_ARRAY_INIT(param_t*, &m->params);
     D_ARRAY_INIT(block_t*, &m->blocks);
 
@@ -20,6 +21,9 @@ void model_deinit(model_t * model){
     if(!model) return;
     for(int i=0; i<D_ARRAY_LEN(model->signals); i++)
         signal_deinit(D_ARRAY_ATV(signal_t*, &model->signals, i));
+    d_array_deinit(&model->signals);
+    for(int i=0; i<D_ARRAY_LEN(model->variables); i++)
+        variable_deinit(D_ARRAY_ATV(variable_t*, &model->variables, i));
     d_array_deinit(&model->signals);
     for(int i=0; i<D_ARRAY_LEN(model->params); i++)
         param_deinit(D_ARRAY_ATV(param_t*, &model->params, i));
@@ -36,6 +40,14 @@ int model_add_signal(const char * name, model_t * model){
     signal_t * s = signal_init(name);
     d_array_insert(&model->signals, &s);
     return D_ARRAY_LEN(model->signals)-1;
+}
+
+int model_add_variable(const char * name, model_t * model){
+    if(!model) return -1;
+    // TODO use hashmap to store name->id pairs
+    variable_t * s = variable_init(name);
+    d_array_insert(&model->variables, &s);
+    return D_ARRAY_LEN(model->variables)-1;
 }
 
 int model_add_param(const char * name, double value, model_t * model){
@@ -63,6 +75,15 @@ int model_get_signal(const char * name, model_t * model){
     if(!model) return -1;
     for(int i=0; i<D_ARRAY_LEN(model->signals); i++){
         char * n = (D_ARRAY_ATV(signal_t*, &model->signals, i))->name;
+        if(!strcmp(name, n)) return i;
+    }
+    return -1;
+}
+
+int model_get_variable(const char * name, model_t * model){
+    if(!model) return -1;
+    for(int i=0; i<D_ARRAY_LEN(model->variables); i++){
+        char * n = (D_ARRAY_ATV(signal_t*, &model->variables, i))->name;
         if(!strcmp(name, n)) return i;
     }
     return -1;

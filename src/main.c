@@ -44,7 +44,8 @@ int main(int argc, char ** argv){
     sim_plot("w", "pf", 223, NULL, state, "legend", 1, "time f");
     sim_plot("w", "pos", 222, NULL, state, "", 1, "q0 q3 style:None");
 
-    sim_run_realtime(20.0, 30, 1, state);
+    // sim_run_realtime(20.0, 30, 1, state);
+    sim_run(20, state);
 
 end:
     model_deinit(model);
