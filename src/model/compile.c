@@ -53,7 +53,9 @@ int _model_findend_nonchainbreaking(int i, model_t * model, int * visited, int *
 }
 
 int model_evaluate(FILE * f, d_array_t * eval_order, model_t * model){
-    fprintf(f, "#include <math.h>\n\ntypedef double *(integral_f)(double,double,int,void*);\n\n");
+    fprintf(f, "#include <math.h>\n\ntypedef double (*integral_f)(double,double,int,void*);\n\n");
+
+    fprintf(f, "#define INT(v, i) integral(v, i, integral_nr++, solver_state)\n\n");
 
     // Create values() function
     fprintf(f, "int values(){\n\treturn %d;\n}\n\n", D_ARRAY_LEN(model->signals)+D_ARRAY_LEN(model->params));

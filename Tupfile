@@ -1,6 +1,7 @@
 include_rules
 
-src_c = src/dynamic_array.c \
+src_c = \
+    src/dynamic_array.c \
     src/sim/solvers/euler.c \
     src/sim/plot.c \
     src/sim/csv.c \
@@ -10,21 +11,36 @@ src_c = src/dynamic_array.c \
     src/model/block.c \
     src/model/model.c \
     src/model/compile.c \
+    src/main.c
+
+src_blocks_src = \
     src/model/blocks/src/sine.c \
     src/model/blocks/src/cosine.c \
     src/model/blocks/src/step.c \
     src/model/blocks/src/istep.c \
     src/model/blocks/src/impulse.c \
     src/model/blocks/src/pulse.c \
+    src/model/blocks/src/pulsewave.c \
     src/model/blocks/src/constant.c \
-    src/model/blocks/src/ramp.c \
-    src/main.c
+    src/model/blocks/src/ramp.c
+
+src_blocks_std = \
+    src/model/blocks/std/gain.c \
+    src/model/blocks/std/attenuate.c \
+    src/model/blocks/std/integrate.c \
+    src/model/blocks/std/sine.c \
+    src/model/blocks/std/cosine.c \
+    src/model/blocks/std/tan.c \
+    src/model/blocks/std/log.c \
+    src/model/blocks/std/exp.c
 
 CFLAGS += -g
 LDFLAGS += -g
 LDLIBS += -lm -ldl
 
 : foreach $(src_c) |> !cc |> out/%B.o
+: foreach $(src_blocks_src) |> !cc |> out/blocks_src_%B.o
+: foreach $(src_blocks_std) |> !cc |> out/blocks_std%B.o
 : out/*.o |> !ld |> out/main
 
 .gitignore

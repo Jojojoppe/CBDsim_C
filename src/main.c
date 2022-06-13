@@ -29,18 +29,18 @@ int run_sim(){
     sim_plot("w0", "p0", 121, "Some__Plot", state,
         "xlabel:time legend",
         2,
-        "time in1:sin",
-        "time in2:cos"
+        "time s1:src",
+        "time s2:out"
     );
     sim_plot("w0", "p1", 122, "Some__other__Plot", state,
-        "",
+        "xlabel:src ylabel:out",
         1,
-        "in1 in2"
+        "s1 s2"
     );
     // sim_csv_start("data.csv", state);
 
-    sim_run_realtime(20.0, 30, 1, state);
-    // sim_run(20.0, state);
+    // sim_run_realtime(5.0, 30, 1, state);
+    sim_run(5.0, state);
 
     sim_deinit(state);
     return 0;
@@ -54,10 +54,10 @@ int main(int argc, char ** argv){
 
     model_t * model = model_init();
 
-    int s_in1 = model_add_signal("in1", model);
-    int s_in2 = model_add_signal("in2", model);
-    int b_sine = blocks_add_src_sine(1.0, 1.0, "sin", s_in1, model);
-    int b_cosine = blocks_add_src_pulse(0.0, 1.0, 2.0, 2.5, "ramp", s_in2, model);
+    int s_1 = model_add_signal("s1", model);
+    int s_2 = model_add_signal("s2", model);
+    int b_src = blocks_add_src_sine(1.0, 1.0, "src", s_1, model);
+    int b_tst = blocks_add_std_exp("tst", s_1, s_2, model);    
 
     if(model_compile("TM.c", model)) return -1;
 

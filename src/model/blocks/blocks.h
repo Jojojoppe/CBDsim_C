@@ -15,8 +15,23 @@ int blocks_add_src_step(double v, double t, const char * name, int out, model_t 
 int blocks_add_src_istep(double v, double t, const char * name, int out, model_t * model);
 int blocks_add_src_impulse(double A, double t, const char * name, int out, model_t * model);
 int blocks_add_src_pulse(double v0, double v1, double t0, double t1, const char * name, int out, model_t * model);
+int blocks_add_src_pulsewave(double v0, double v1, double t0, double t1, double t2, const char * name, int out, model_t * model);
 
 int blocks_add_src_constant(double v, const char * name, int out, model_t * model);
 int blocks_add_src_ramp(double a, double b, const char * name, int out, model_t * model);
+
+// Standard
+// --------
+int blocks_add_std_gain(double k, const char * name, int in, int out, model_t * model);
+int blocks_add_std_attenuate(double k, const char * name, int in, int out, model_t * model);
+
+int blocks_add_std_integrate(double initial, const char * name, int in, int out, model_t * model);
+
+int blocks_add_std_sine(const char * name, int in, int out, model_t * model);
+int blocks_add_std_cosine(const char * name, int in, int out, model_t * model);
+int blocks_add_std_tan(const char * name, int in, int out, model_t * model);
+
+int blocks_add_std_log(const char * name, int in, int out, model_t * model);
+int blocks_add_std_exp(const char * name, int in, int out, model_t * model);
 
 #endif
