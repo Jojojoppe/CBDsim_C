@@ -16,8 +16,8 @@ typedef struct block_s {
     void (*generate_init)(FILE * f, struct block_s * block);
 } block_t;
 
-block_t * block_init(const int * ports_in, size_t ports_in_n, const int * ports_out, size_t ports_out_n, 
-    const int * parameters, size_t parameters_n, const char * name, const char * type, 
+block_t * block_init(int * ports_in, size_t ports_in_n, int * ports_out, size_t ports_out_n, 
+    int * parameters, size_t parameters_n, const char * name, const char * type, 
     int statefull, void (*generate)(FILE* f, block_t * block), void (*generate_init)(FILE * f, block_t * block)
 );
 void block_deinit(block_t * block);

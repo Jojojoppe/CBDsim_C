@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-block_t * block_init(const int * ports_in, size_t ports_in_n, const int * ports_out, size_t ports_out_n, 
-            const int * parameters, size_t parameters_n, const char * name, const char * type, int statefull, 
+block_t * block_init(int * ports_in, size_t ports_in_n, int * ports_out, size_t ports_out_n, 
+            int * parameters, size_t parameters_n, const char * name, const char * type, int statefull, 
             void (*generate)(FILE* f, block_t * block), void (*generate_init)(FILE * f, block_t * block))
         {
     block_t * b = calloc(1, sizeof(block_t));

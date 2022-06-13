@@ -27,9 +27,9 @@ int blocks_add_src_sine(double A, double f, const char * name, int out, model_t 
     free(pAname);
     free(pfname);
 
-    const int pin[0] = {};
-    const int pout[1] = {out};
-    const int params[2] = {pA, pf};
+    int pin[0] = {};
+    int pout[1] = {out};
+    int params[2] = {pA, pf};
     return model_add_block(pin, 0, pout, 1, params, 2, name, 
         "src/sine", 0, src_sine_generate, src_sine_generate_init, model
     );

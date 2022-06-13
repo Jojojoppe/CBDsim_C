@@ -1,138 +1,196 @@
 #!/usr/bin/env python3
+from turtle import update
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
 
-state = "idle"
+windows = {}
+cols = {}
+colformat = []
 
-colindex= {}
-colnames = []
-cols = []
+# Update all graphs and redraw them
+def dataupdate():
+    for wk, win in windows.items():
+        for pi, plot in win["plots"].items():
+            for i in range(len(plot["lines"])):
+                line = plot["lines"][i]
+                colx, coly = plot["linecols"][i]
+                line.set_xdata(colx)
+                line.set_ydata(coly)
+                if len(colx)>0 and len(coly)>0:
+                    plot["lastlines"][i].set_xdata([colx[-1]])
+                    plot["lastlines"][i].set_ydata([coly[-1]])
+            plot["ax"].relim()
+            plot["ax"].autoscale_view(tight=True, scalex=plot["autoscale"][0], scaley=plot["autoscale"][1])
+        win["fig"].canvas.draw()
+        win["fig"].canvas.flush_events()
 
 while True:
-    s_in = input()
-
-    s_in = s_in.split()
-    if len(s_in)<1:
+    # Get input
+    string_in = input()
+    # Tokenize
+    t_in = string_in.split()
+    if len(t_in)<1:
         continue
 
-    # print(s_in)
+    # print("VIZ:", t_in)
 
-    if s_in[0]=="X":
+    cmd = t_in[0]
+
+    # Stop plotter
+    if cmd=="quit":
+        break
+    elif cmd=="stop":
+        plt.show(block=True)
         break
 
-    if state=="idle":
+    # Reset ploter
+    if cmd=="reset":
+        plt.close('all')
+        windows = {}
+        cols = {}
+        colformat = []
+        realtime = None
+        realtimecounter = 0
 
-        if s_in[0]=="cols":
-            cols = []
-            colnames = []
-            colindex = {}
-            for c in s_in[1:]:
-                colnames.append(c)
-                cols.append([])
-            for i, colname in enumerate(colnames):
-                colindex[colname] = i
-            plt.close('all')
+    # Create plot window
+    # wind <win_name> [title:<>]
+    elif cmd=="wind":
+        win_name = t_in[1]
+        windows[win_name] = {
+            "fig" : plt.figure(),
+            "plots" : {},
+        }
+        # Loop over extra options
+        for o in t_in[2:]:
+            o = o.split(':')
+            o_name = o[0]
+            if o_name=="title":
+                windows[win_name]["fig"].suptitle(o[1].replace('__', ' '))
+        windows[win_name]["fig"].show()
+        dataupdate()
 
-        elif s_in[0]=="data":
-            state="data"
+    # Create plot in window
+    # plot <win_name> <plt_name> <loc> [title:<>] [xlabel:<>] [ylabel:<>] [xrange:<>:<>] [yrange:<>:<>] [legend] | 
+    #   <x> <y>[:<label>] [style:<>] [color:<>] | 
+    #   [...]
+    elif cmd=="plot":
+        win_name = t_in[1]
+        plt_name = t_in[2]
+        loc = int(t_in[3])
+        ax = windows[win_name]["fig"].add_subplot(loc)
 
-        elif s_in[0]=="csv":
-            fname = s_in[1]
-            colused = []
-            for c in s_in[2:]:
-                colused.append(c)
-            with open(fname, 'w') as f:
-                writer = csv.writer(f)
-                writer.writerow(colused)
-                for i in range(len(cols[0])):
-                    r = []
-                    for name in colused:
-                        r.append(cols[colindex[name]][i])
-                    writer.writerow(r)
+        curline = None
+        lines = []
+        lastlines = []
+        linecols = []
+        legend = False
+        autoscalex = True
+        autoscaley = True
 
-        elif s_in[0]=="plot":
-            xname = ""
-            options = {}
-            form = s_in[1].split(',')
-            fig, ax = plt.subplots(int(form[0]), int(form[1]))
-            if type(ax) is not np.ndarray:
-                ax = [ax]
-            plotnr = 0
-            stepped = False
-            yrange = None
-            xrange = None
-
-            for t in s_in[2:]:
-
-                if t.startswith("x:"):
-                    xname = t.split(':')[1]
-                    options = {}
-                    plotnr += 1
-
-                elif t.startswith("y:"):
-                    t = t.split(':')
-                    options[t[1]] = {}
-                    o_current = None
-                    for o in t[2:]:
-                        if o_current is not None:
-                            options[t[1]][o_current] = o
-                            o_current = None
-                        else:
-                            if o=="color":
-                                o_current = "color"
-                            elif o=="label":
-                                o_current = "label"
-                            elif o=="ls":
-                                o_current = "ls"
-
-                elif t=="step":
-                    stepped = True
-
-                elif t.startswith("yrange:"):
-                    yrange = t.split(':')[1:]
-
-                elif t.startswith("xrange:"):
-                    xrange = t.split(':')[1:]
-
-                elif t=="p":
-                    sp = ax[plotnr-1]
-                    for yname, opt in options.items():
-                        if stepped:
-                            line, = sp.step(cols[colindex[xname]], cols[colindex[yname]], label=yname, where='post')
-                        else:
-                            line, = sp.plot(cols[colindex[xname]], cols[colindex[yname]], label=yname)
-                        for oname, oval in opt.items():
-                            if oname=="color":
-                                line.set_color(oval)
-                            elif oname=="label":
-                                line.set_label(oval)
-                            elif oname=="ls":
-                                line.set_linestyle(oval)
-                    sp.set_xlabel(xname)
-                    sp.legend(loc='upper right')
-                    sp.grid(visible=True, which='both')
-                    sp.set_xbound(min(cols[colindex[xname]]), max(cols[colindex[xname]]))
-                    if yrange is not None:
-                        sp.set_ylim(float(yrange[0]), float(yrange[1]))
-                    if xrange is not None:
-                        sp.set_xlim(float(xrange[0]), float(xrange[1]))
-
-            plt.show()
-
-
-    elif state=="data":
-
-        if s_in[0]=="e":
-            state="idle"
+        # Get general/subplot settings
+        spos = 4
+        for o in t_in[4:]:
+            osp = o.split(':')
+            spos += 1
+            if o.startswith("title:"):
+                ax.set_title(osp[1].replace('__', ' '))
+            elif o.startswith("xlabel:"):
+                ax.set_xlabel(osp[1].replace('__', ' '))
+            elif o.startswith("ylabel:"):
+                ax.set_ylabel(osp[1].replace('__', ' '))
+            elif o.startswith("xrange"):
+                autoscalex = False
+                ax.set_xbound(float(osp[1]), float(osp[2]))
+                ax.set_xlim(float(osp[1]), float(osp[2]))
+            elif o.startswith("yrange"):
+                autoscaley = False
+                ax.set_ybound(float(osp[1]), float(osp[2]))
+                ax.set_ylim(float(osp[1]), float(osp[2]))
+            elif o=="legend":
+                legend = True
+            # If start of lines
+            elif o=="|":
+                curline = 0
+                break
+                
+        if curline is None:
+            print("ERROR: no lines specified in subplot")
             continue
 
-        if len(s_in)<len(colnames):
-            print("ERROR: incoming data not in right format. need more columns")
-            exit()
+        # Get all line settings
+        clen = len(t_in)
+        while spos<clen:
+            xsettings = t_in[spos].split(':')
+            ysettings = t_in[spos+1].split(':')
+            spos += 2
 
-        for i, d in enumerate(s_in):
-            if i>= len(colnames):
-                break
-            cols[i].append(float(d))
+            xname = xsettings[0]
+            if xname not in cols:
+                cols[xname] = []
 
+            yname = ysettings[0]
+            ylabel = yname
+            if yname not in cols:
+                cols[yname] = []
+            if len(ysettings)>1:
+                ylabel = ysettings[1]
+
+            # create (empty) line
+            line, = ax.plot(cols[xname], cols[yname], label=ylabel.replace('__', ' '))
+            if len(cols[xname])>0 and len(cols[yname])>0:
+                lastline, = ax.plot([cols[xname][-1]], [cols[yname][-1]], 'kx')
+            else:
+                lastline, = ax.plot([0], [0], 'kx')
+            lines.append(line)
+            lastlines.append(lastline)
+            linecols.append((cols[xname], cols[yname]))
+
+            # get line settings for current line
+            for o in t_in[spos:]:
+                osp = o.split(':')
+                spos += 1
+                if o=='|':
+                    curline += 1
+                    break
+                elif o.startswith("color:"):
+                    line.set_color(osp[1])
+                elif o.startswith("style"):
+                    line.set_linestyle(osp[1])
+
+        if legend:
+            ax.legend()
+
+        ax.grid(visible=True, which='both')
+
+        # Save plot information
+        Pd = {
+            "ax" : ax,
+            "lines" : lines,
+            "lastlines" : lastlines,
+            "linecols" : linecols,
+            "autoscale" : (autoscalex, autoscaley),
+        }
+        windows[win_name]["plots"][plt_name] = Pd
+
+    # Set incomming data format
+    # format col1 col2 col3 ....
+    elif cmd=="format":
+        colformat = []
+        for o in t_in[1:]:
+            colformat.append(o)
+            if o not in cols:
+                cols[o] = []
+
+    # Save incomming data
+    # d d1 d2 d3 ...
+    elif cmd=="d":
+        i = 0
+        for o in t_in[1:]:
+            cols[colformat[i]].append(float(o))
+            i += 1
+
+    # Update graphs with new data
+    # update
+    elif cmd=="update":
+        dataupdate()

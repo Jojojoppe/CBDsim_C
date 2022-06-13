@@ -46,8 +46,8 @@ int model_add_param(const char * name, double value, model_t * model){
     return D_ARRAY_LEN(model->params)-1;
 }
 
-int model_add_block(const int * ports_in, size_t ports_in_n, const int * ports_out, size_t ports_out_n, 
-            const int * parameters, size_t parameters_n, const char * name, const char * type, int statefull, 
+int model_add_block(int * ports_in, size_t ports_in_n, int * ports_out, size_t ports_out_n, 
+            int * parameters, size_t parameters_n, const char * name, const char * type, int statefull, 
             void (*generate)(FILE* f, block_t * block), void (*generate_init)(FILE* f, block_t * block), model_t * model)
         {
     if(!model) return -1;

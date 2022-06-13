@@ -5,14 +5,17 @@
 #include <dlfcn.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
 
-sim_state_t * sim_init(solver_t * solver, void * solver_params){
+sim_state_t * sim_init(const solver_t * solver, void * solver_params, const char * viz){
     sim_state_t * state = (sim_state_t*) calloc(1, sizeof(sim_state_t));
     // Set solver info
     state->solver = solver;
     state->solver_state = solver->init(solver_params);
     // Set visualizer
-    state->vis = visualizer_init(); 
+    if(viz){
+        state->viz = popen(viz, "w");
+    }
     return state;
 }
 
@@ -25,7 +28,11 @@ void sim_deinit(sim_state_t * state){
     if(state->values){
         free(state->values);
     }
-    visualizer_deinit(state->vis);
+    if(state->viz){
+        fprintf(state->viz, "stop\n");
+        // fprintf(state->viz, "quit\n");
+        pclose(state->viz);
+    }
     free(state);
 }
 
@@ -98,14 +105,28 @@ void sim_init_run(sim_state_t * state){
     // Initialize model
     state->model_init(state->values);
 
-    // Setup visualizer
-    visualizer_reset(state->vis);
-    for(int i=0; i<state->model_values(); i++){
-        visualizer_record_names(state->model_value_name(i), state->vis);
+    // Reset viz
+    // TODO move to viz.c
+    if(state->viz){
+        fprintf(state->viz, "reset\n");
+        fflush(state->viz);
+    }
+
+    // Set data format
+    // TODO move to viz.c
+    // FIXME not all values...
+    if(state->viz){
+        fprintf(state->viz, "format ");
+        for(int i=0; i<state->model_values(); i++){
+            char * name = state->model_value_name(i);
+            fprintf(state->viz, "%s ", name);
+        }
+        fprintf(state->viz, "\n");
+        fflush(state->viz);
     }
 }
 
-void sim_step(sim_state_t * state){
+double sim_step(sim_state_t * state){
     if(!state) return; // TODO error handling
 
     state->solver->start_step(state->solver_state);
@@ -114,30 +135,61 @@ void sim_step(sim_state_t * state){
         state->time, state->timestep, state->solver->integrate, state->solver_state
     );
 
+    double oldtimestep = state->timestep;
+
     solver_step_end_retval_t r = state->solver->end_step(state->solver_state);
     state->major = r.major;
     state->minor = r.minor;
     state->timestep = r.timestep;
     state->time += r.timestep;
+
+    return oldtimestep;
 }
 
 void sim_run(double runtime, sim_state_t * state){
     if(!state) return; // TODO error handling
     double starttime = state->time;
-    visualizer_record_start(state->vis);
     while(state->time<=runtime+starttime){
         sim_step(state);
-        visualizer_recordall(state->values, state->vis);
+        sim_plot_data_all(state);
     }
-    visualizer_record_end(state->vis);
+
+    // Update viz
+    sim_plot_update(state);
 }
 
-void sim_plot(const char * options, sim_state_t * state){
+void sim_run_realtime(double runtime, double updatef, double speed, sim_state_t * state){
     if(!state) return; // TODO error handling
-    visualizer_plot(options, state->vis);
-}
 
-void sim_csv(const char * options, sim_state_t * state){
-    if(!state) return; // TODO error handling
-    visualizer_csv(options, state->vis);
+    double starttime = state->time;
+
+    // Get current system time
+    struct timeval tv;
+    double simpassed = 0.0;
+
+    while(state->time<=runtime+starttime){
+        gettimeofday(&tv, NULL);
+        unsigned long tstart = 1000000ull*tv.tv_sec + tv.tv_usec;
+
+        double delta = sim_step(state);
+        sim_plot_data_all(state);
+
+        simpassed += delta;
+        if(simpassed>speed/updatef){
+            simpassed = 0.0;
+            sim_plot_update(state);
+        }
+
+        // Wait until now + timestep is gone
+        gettimeofday(&tv, NULL);
+        unsigned long tend = 1000000ull*tv.tv_sec + tv.tv_usec;
+        unsigned long tused = tend-tstart;
+        // Get usecods needed for timestep
+        unsigned long treq = (unsigned long)(state->timestep/speed*1000000);
+        if(tused<treq)
+            usleep((treq-tused));
+    }
+
+    // Update viz
+    sim_plot_update(state);
 }

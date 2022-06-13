@@ -2,11 +2,12 @@
 #define __H_SIM
 
 #include "solver.h"
-#include "visualizer.h"
+#include <stdio.h>
+#include <stdarg.h>
 
 typedef struct sim_state_s {
     // Solver information
-    solver_t * solver;
+    const solver_t * solver;
     void * solver_state;
 
     // Model information
@@ -23,20 +24,23 @@ typedef struct sim_state_s {
     int major, minor;
 
     // Visualizer
-    visualizer_t * vis;
+    FILE * viz;
 } sim_state_t;
 
-sim_state_t * sim_init(solver_t * solver, void * solver_params);
+sim_state_t * sim_init(const solver_t * solver, void * solver_params, const char * viz);
 void sim_deinit(sim_state_t * state);
 
 int sim_compile_model(const char * modelcfile, const char * modelfile, sim_state_t * state);
 int sim_load_model(const char * modelfile, sim_state_t * state);
 
 void sim_init_run(sim_state_t * state);
-void sim_step(sim_state_t * state);
+double sim_step(sim_state_t * state);
 void sim_run(double runtime, sim_state_t * state);
+void sim_run_realtime(double runtime, double updatef, double speed, sim_state_t * state);
 
-void sim_plot(const char * options, sim_state_t * state);
-void sim_csv(const char * options, sim_state_t * state);
+void sim_window(const char * name, const char * title, sim_state_t * state);
+void sim_plot(const char * wname, const char * pname, int loc, const char * title, sim_state_t * state, const char * options, int lines, ...);
+void sim_plot_update(sim_state_t * state);
+void sim_plot_data_all(sim_state_t * state);
 
 #endif

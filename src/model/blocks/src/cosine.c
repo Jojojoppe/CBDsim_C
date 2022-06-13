@@ -27,9 +27,9 @@ int blocks_add_src_cosine(double A, double f, const char * name, int out, model_
     free(pAname);
     free(pfname);
 
-    const int pin[0] = {};
-    const int pout[1] = {out};
-    const int params[2] = {pA, pf};
+    int pin[0] = {};
+    int pout[1] = {out};
+    int params[2] = {pA, pf};
     return model_add_block(pin, 0, pout, 1, params, 2, name, 
         "src/cosine", 0, src_cosine_generate, src_cosine_generate_init, model
     );
