@@ -36,4 +36,11 @@ d_array_error_t d_array_resize(d_array_t * array, size_t size);
 
 void * d_array_at(d_array_t * array, size_t index);
 
+#define D_ARRAY_ATV(T, array, i) *(T*)d_array_at(array, i)
+#define D_ARRAY_ATP(T, array, i) (T*)d_array_at(array, i)
+#define D_ARRAY_DP(T, array) (T*)array.begin
+#define D_ARRAY_PDP(T, array) (T*)array->begin
+#define D_ARRAY_LEN(array) array.filled_size
+#define D_ARRAY_PLEN(array) array->filled_size
+
 #endif

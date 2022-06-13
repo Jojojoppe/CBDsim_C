@@ -1,71 +1,53 @@
 #include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
 
-#include "sim.h"
-#include "cbd/blocks/src/src.h"
-#include "cbd/blocks/standard/standard.h"
-
-#define SIGNAL(name, state) int s_##name = cbd_signal_add(#name, state);
-#define PARAM(name, value, state) int p_##name = cbd_param_add(#name, value, state);
+#include "model/model.h"
+#include "model/blocks/blocks.h"
+#include "sim/sim.h"
+#include "sim/solvers/euler.h"
 
 int main(int argc, char ** argv){
+    int error = 0;
 
-    sim_state_t state;
-    sim_init(&state, 0.01);
+    // Generate model
+    model_t * model = model_init();
 
-    SIGNAL(ein, &state)
-    SIGNAL(e2, &state)
-    SIGNAL(e3, &state)
-    SIGNAL(e4, &state)
-    SIGNAL(f, &state)
-    SIGNAL(p2, &state)
-    SIGNAL(q3, &state)
+    SIGNAL(e1, model);
+    SIGNAL(e2, model);
+    SIGNAL(e3, model);
+    SIGNAL(e4, model);
+    SIGNAL(f, model);
+    SIGNAL(q3, model);
+    SIGNAL(p2, model);
 
-    PARAM(K_I, 1.0, &state)
-    PARAM(K_C, 1.0, &state)
-    PARAM(K_R, 0.0, &state)
-    PARAM(int_I_init, 0.0, &state)
-    PARAM(int_C_init, 0.0, &state)
+    blocks_add_src_step(1, 10, "src", s_e1, model);
+    blocks_add_std_integrate(0.1, "iC", s_f, s_q3, model);
+    blocks_add_std_integrate(0.0, "iI", s_e2, s_p2, model);
+    blocks_add_std_attenuate(0.1, "KC", s_q3, s_e3, model);
+    blocks_add_std_attenuate(0.1, "KI", s_p2, s_f, model);
+    blocks_add_std_gain(0.1, "KR", s_f, s_e4, model);
+    blocks_add_std_plusmin("pm", (int[]){s_e1}, 1, (int[]){s_e3, s_e4}, 2, s_e2, model);
 
-    int b_int_I = cbd_block_standard_int_rk4(s_e2, s_p2, p_int_I_init, "int_I", &state);
-    int b_int_C = cbd_block_standard_int_rk4(s_f, s_q3, p_int_C_init, "int_C", &state);
-    int b_K_I = cbd_block_standard_gain(s_p2, s_f, p_K_I, "K_I", &state);
-    int b_K_C = cbd_block_standard_gain(s_q3, s_e3, p_K_C, "K_C", &state);
-    int b_K_R = cbd_block_standard_gain(s_f, s_e4, p_K_R, "K_R", &state);
+    SIGNAL(q0, model);
+    blocks_add_src_constant(0, "zero", s_q0, model);
 
-    int b_pm1; {
-        const int pin[1] = {s_ein};
-        const int min[2] = {s_e3, s_e4};
-        b_pm1 = cbd_block_standard_plusmin(pin, 1, min, 2, s_e2, "pm1", &state);
-    }
+    if((error = model_compile("TM.c", model))) goto end;
+    // Load model and run simulation
+    solver_euler_params_t sparams = {.timestep=0.01};
+    sim_state_t * state = sim_init(&solver_euler, &sparams, "./plot");
 
-    PARAM(inp_A, 1.0, &state)
-    PARAM(inp_t0, 0.5, &state)
-    int b_inp = cbd_block_src_step(s_ein, p_inp_A, p_inp_t0, "inp", &state);
+    if((error = sim_compile_model("TM.c", "model.so", state))) goto end;
+    if((error = sim_load_model("model.so", state))) goto end;
 
-    // sim_viz(&state);
-    // sim_serialize("models/RLC.model", &state);
+    sim_init_run(state);
+    sim_plot_window("w", NULL, state);
+    sim_plot("w", "pe", 221, NULL, state, "legend", 4, "time e1", "time e2", "time e3", "time e4");
+    sim_plot("w", "pf", 223, NULL, state, "legend", 1, "time f");
+    sim_plot("w", "pos", 222, NULL, state, "", 1, "q0 q3 style:None");
 
-    sim_compile(&state);
+    sim_run_realtime(20.0, 30, 1, state);
 
-    for(int i=0; i<state.eval_order.filled_size; i++){
-        printf("%d ", *(int*)d_array_at(&state.eval_order, i));
-    }
-    printf("\n");
-
-    sim_watch_signal(state.time, &state);
-    sim_watch_signal(s_ein, &state);
-    sim_watch_signal(s_e2, &state);
-    sim_watch_signal(s_e3, &state);
-    sim_watch_signal(s_e4, &state);
-    sim_watch_signal(s_f, &state);
-
-    sim_run(40.0, &state);
-
-    sim_plot("2,1 x:time y:ein y:e2 y:e3 y:e4 p x:time y:f p", &state);
-    // sim_csv("rlc_euler.csv time f", &state);
-
-    sim_deinit(&state);
-    return 0;
+end:
+    model_deinit(model);
+    sim_deinit(state);
+    return error;
 }
