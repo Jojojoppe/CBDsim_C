@@ -23,8 +23,9 @@ typedef struct sim_state_s {
     double time, timestep;
     int major, minor;
 
-    // Visualizer
+    // Logger stuff
     FILE * viz;
+    FILE * csv;
 } sim_state_t;
 
 sim_state_t * sim_init(const solver_t * solver, void * solver_params, const char * viz);
@@ -38,9 +39,13 @@ double sim_step(sim_state_t * state);
 void sim_run(double runtime, sim_state_t * state);
 void sim_run_realtime(double runtime, double updatef, double speed, sim_state_t * state);
 
-void sim_window(const char * name, const char * title, sim_state_t * state);
+void sim_plot_window(const char * name, const char * title, sim_state_t * state);
 void sim_plot(const char * wname, const char * pname, int loc, const char * title, sim_state_t * state, const char * options, int lines, ...);
 void sim_plot_update(sim_state_t * state);
 void sim_plot_data_all(sim_state_t * state);
+
+void sim_csv_start(const char * fname, sim_state_t * state);
+void sim_csv_end(sim_state_t * state);
+void sim_csv_data_all(sim_state_t * state);
 
 #endif

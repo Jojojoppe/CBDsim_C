@@ -2,11 +2,20 @@
 from turtle import update
 import matplotlib.pyplot as plt
 import numpy as np
-import csv
+import signal
 
 windows = {}
 cols = {}
 colformat = []
+
+_sigINT = False
+
+def _sighandle(sig, frame):
+    global _sigINT
+    if(sig==signal.SIGINT):
+        _sigINT=True
+
+signal.signal(signal.SIGINT, _sighandle)
 
 # Update all graphs and redraw them
 def dataupdate():
@@ -25,7 +34,7 @@ def dataupdate():
         win["fig"].canvas.draw()
         win["fig"].canvas.flush_events()
 
-while True:
+while True and not _sigINT:
     # Get input
     string_in = input()
     # Tokenize

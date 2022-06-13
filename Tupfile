@@ -2,7 +2,8 @@ include_rules
 
 src_c = src/dynamic_array.c \
     src/sim/solvers/euler.c \
-    src/sim/viz.c \
+    src/sim/plot.c \
+    src/sim/csv.c \
     src/sim/sim.c \
     src/model/signal.c \
     src/model/param.c \
@@ -11,6 +12,12 @@ src_c = src/dynamic_array.c \
     src/model/compile.c \
     src/model/blocks/src/sine.c \
     src/model/blocks/src/cosine.c \
+    src/model/blocks/src/step.c \
+    src/model/blocks/src/istep.c \
+    src/model/blocks/src/impulse.c \
+    src/model/blocks/src/pulse.c \
+    src/model/blocks/src/constant.c \
+    src/model/blocks/src/ramp.c \
     src/main.c
 
 CFLAGS += -g

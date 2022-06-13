@@ -18,14 +18,8 @@ void src_sine_generate_init(FILE * f, block_t * block){
 
 int blocks_add_src_sine(double A, double f, const char * name, int out, model_t * model){
     // Create parameters
-    char * pAname = calloc(1, strlen(name)+strlen("/A")+1);
-    char * pfname = calloc(1, strlen(name)+strlen("/f")+1);
-    sprintf(pAname, "%s/A", name);
-    sprintf(pfname, "%s/f", name);
-    int pA = model_add_param(pAname, A, model);
-    int pf = model_add_param(pfname, f, model);
-    free(pAname);
-    free(pfname);
+    BLOCK_PARAM(A, name, A, model)
+    BLOCK_PARAM(f, name, f, model)
 
     int pin[0] = {};
     int pout[1] = {out};

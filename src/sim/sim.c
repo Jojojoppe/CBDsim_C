@@ -6,6 +6,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <signal.h>
+
+int _sim_sighandler_INT;
+void _sim_sighandler(int s){
+    if(s==SIGINT) _sim_sighandler_INT = 1;
+}
 
 sim_state_t * sim_init(const solver_t * solver, void * solver_params, const char * viz){
     sim_state_t * state = (sim_state_t*) calloc(1, sizeof(sim_state_t));
@@ -16,6 +22,9 @@ sim_state_t * sim_init(const solver_t * solver, void * solver_params, const char
     if(viz){
         state->viz = popen(viz, "w");
     }
+
+    // Add sighandler
+    signal(SIGINT, _sim_sighandler);
     return state;
 }
 
@@ -32,6 +41,9 @@ void sim_deinit(sim_state_t * state){
         fprintf(state->viz, "stop\n");
         // fprintf(state->viz, "quit\n");
         pclose(state->viz);
+    }
+    if(state->csv){
+        fclose(state->csv);
     }
     free(state);
 }
@@ -149,9 +161,10 @@ double sim_step(sim_state_t * state){
 void sim_run(double runtime, sim_state_t * state){
     if(!state) return; // TODO error handling
     double starttime = state->time;
-    while(state->time<=runtime+starttime){
+    while(state->time<=runtime+starttime && !_sim_sighandler_INT){
         sim_step(state);
         sim_plot_data_all(state);
+        sim_csv_data_all(state);
     }
 
     // Update viz
@@ -167,12 +180,13 @@ void sim_run_realtime(double runtime, double updatef, double speed, sim_state_t 
     struct timeval tv;
     double simpassed = 0.0;
 
-    while(state->time<=runtime+starttime){
+    while(state->time<=runtime+starttime && !_sim_sighandler_INT){
         gettimeofday(&tv, NULL);
         unsigned long tstart = 1000000ull*tv.tv_sec + tv.tv_usec;
 
         double delta = sim_step(state);
         sim_plot_data_all(state);
+        sim_csv_data_all(state);
 
         simpassed += delta;
         if(simpassed>speed/updatef){

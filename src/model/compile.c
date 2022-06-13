@@ -112,6 +112,8 @@ int model_compile(const char * outfile, model_t * model){
     d_array_t * sig_to = calloc(D_ARRAY_LEN(model->signals), sizeof(d_array_t));
     for(int i=0; i<D_ARRAY_LEN(model->signals); i++) D_ARRAY_INIT(int, sig_to+i);
     for(int i=0; i<D_ARRAY_LEN(model->signals); i++) sig_from[i] = -1;
+    // Set time and timestep to be set from -2
+    sig_from[0] = sig_from[1] = -2;
     d_array_t eval_order;
     D_ARRAY_INIT(int, &eval_order);
     int * block_evaluated = calloc(D_ARRAY_LEN(model->blocks), sizeof(int));
@@ -123,7 +125,7 @@ int model_compile(const char * outfile, model_t * model){
         // Set from values
         for(int j=0; j<D_ARRAY_LEN(block->ports_out); j++){
             int sf = D_ARRAY_ATV(int, &block->ports_out, j);
-            if(sig_from[sf]>-1){
+            if(sig_from[sf]!=-1){
                 err = 1;
                 printf("ERROR: block %s sets output to already connected signal %s\n", block->name, (D_ARRAY_ATV(signal_t*, &model->signals, sf))->name);
                 goto compileclean;

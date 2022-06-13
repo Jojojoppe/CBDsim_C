@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-void sim_window(const char * name, const char * title, sim_state_t * state){
+void sim_plot_window(const char * name, const char * title, sim_state_t * state){
     if(!state) return; if(!state->viz) return;
     if(!name) return;
 
@@ -44,7 +44,6 @@ void sim_plot_update(sim_state_t * state){
 
 void sim_plot_data_all(sim_state_t * state){
     if(!state) return; if(!state->viz) return;
-    // Set data format
     // FIXME not all values...
     if(state->viz){
         fprintf(state->viz, "d ");
