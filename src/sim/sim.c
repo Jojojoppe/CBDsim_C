@@ -139,7 +139,7 @@ void sim_init_run(sim_state_t * state){
 }
 
 double sim_step(sim_state_t * state){
-    if(!state) return; // TODO error handling
+    if(!state) return 0.0; // TODO error handling
 
     state->solver->start_step(state->solver_state);
 
@@ -162,9 +162,11 @@ void sim_run(double runtime, sim_state_t * state){
     if(!state) return; // TODO error handling
     double starttime = state->time;
     while(state->time<=runtime+starttime && !_sim_sighandler_INT){
+        if(state->major){
+            sim_plot_data_all(state);
+            sim_csv_data_all(state);
+        }
         sim_step(state);
-        sim_plot_data_all(state);
-        sim_csv_data_all(state);
     }
 
     // Update viz
@@ -184,9 +186,11 @@ void sim_run_realtime(double runtime, double updatef, double speed, sim_state_t 
         gettimeofday(&tv, NULL);
         unsigned long tstart = 1000000ull*tv.tv_sec + tv.tv_usec;
 
+        if(state->major){
+            sim_plot_data_all(state);
+            sim_csv_data_all(state);
+        }
         double delta = sim_step(state);
-        sim_plot_data_all(state);
-        sim_csv_data_all(state);
 
         simpassed += delta;
         if(simpassed>speed/updatef){

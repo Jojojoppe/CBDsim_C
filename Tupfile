@@ -3,6 +3,7 @@ include_rules
 src_c = \
     src/dynamic_array.c \
     src/sim/solvers/euler.c \
+    src/sim/solvers/rk4.c \
     src/sim/plot.c \
     src/sim/csv.c \
     src/sim/sim.c \

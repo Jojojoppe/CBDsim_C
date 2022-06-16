@@ -4,7 +4,7 @@
 #include "../block.h"
 #include "../model.h"
 
-#define BLOCK_PARAM(nm, name, value, model) int p##nm; {char * s = calloc(1, strlen(name)+strlen(#nm)+2); sprintf(s, "%s/%s", #name #nm); p##nm = model_add_param(s, value, model); free(s);}
+#define BLOCK_PARAM(nm, name, value, model) int p##nm; {char * s = calloc(1, strlen(name)+strlen(#nm)+2); sprintf(s, "%s/%s", name, #nm); p##nm = model_add_param(s, value, model); free(s);}
 
 // Sources
 // -------
