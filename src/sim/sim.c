@@ -13,15 +13,8 @@ void _sim_sighandler(int s){
     if(s==SIGINT) _sim_sighandler_INT = 1;
 }
 
-sim_state_t * sim_init(const solver_t * solver, void * solver_params, const char * viz){
+sim_state_t * sim_init(){
     sim_state_t * state = (sim_state_t*) calloc(1, sizeof(sim_state_t));
-    // Set solver info
-    state->solver = solver;
-    state->solver_state = solver->init(solver_params);
-    // Set visualizer
-    if(viz){
-        state->viz = popen(viz, "w");
-    }
 
     // Add sighandler
     signal(SIGINT, _sim_sighandler);
@@ -30,7 +23,7 @@ sim_state_t * sim_init(const solver_t * solver, void * solver_params, const char
 
 void sim_deinit(sim_state_t * state){
     if(!state) return;
-    state->solver->deinit(state->solver_state);
+    if(state->solver) state->solver->deinit(state->solver_state);
     if(state->model){
         dlclose(state->model);
     }
@@ -38,6 +31,7 @@ void sim_deinit(sim_state_t * state){
         free(state->values);
     }
     if(state->viz){
+        // TODO move to plot.c
         fprintf(state->viz, "stop\n");
         // fprintf(state->viz, "quit\n");
         pclose(state->viz);
@@ -88,41 +82,67 @@ int sim_load_model(const char * modelfile, sim_state_t * state){
     if(dlerror()) return -5;
     state->model_step = dlsym(state->model, "step");
     if(dlerror()) return -6;
+    state->model_disdomains = dlsym(state->model, "disdomains");
+    if(dlerror()) return -7;
+    state->model_disdomain_ts = dlsym(state->model, "disdomain_ts");
+    if(dlerror()) return -8;
 
     return 0;
 }
 
-void sim_init_run(sim_state_t * state){
+void sim_init_run(sim_run_settings_t * settings, sim_state_t * state){
     if(!state) return; // TODO error handling
     if(!state->model) return; // TODO error handling
 
     // if already done free values
     if(state->values) free(state->values);
+    // if already sample_at array free
+    if(state->sample_at) free(state->sample_at);
 
     // Allocate values
     state->values = calloc(state->model_values(), sizeof(double));
+    // Allocate sample at array
+    state->sample_at = calloc(state->model_disdomains(), sizeof(double));
     // Clear all other values
     state->time = state->timestep = 0;
     state->major = 1;
     state->minor = 0;
+    state->disdomains = state->model_disdomains();
 
     // Load initial values
     for(int i=0; i<state->model_values(); i++){
         state->values[i] = state->model_value_init(i);
     }
 
+    // Create solver if not exists or if different solver
+    if(state->solver!=settings->solver){
+        if(state->solver){
+            // Already a solver: deinitialize it
+            state->solver->deinit(state->solver_state);
+        }
+        state->solver = settings->solver;
+        state->solver_state = settings->solver->init(settings->solver_settings);
+    }
     // Reset solver
     state->solver->reset(state->solver_state);
 
+    // Create visualizer if not exists of if different visualizer
+    if(state->viz_type!=settings->viz){
+        if(state->viz_type){
+            // Already a visualizer: deinitialize it
+            // TODO move to plot.c
+            fprintf(state->viz, "stop\n");
+            // fprintf(state->viz, "quit\n");
+            pclose(state->viz);
+        }
+        state->viz_type = settings->viz;
+        state->viz = popen(settings->viz, "w");
+    }else{
+        sim_plot_reset(state);
+    }
+
     // Initialize model
     state->model_init(state->values);
-
-    // Reset viz
-    // TODO move to viz.c
-    if(state->viz){
-        fprintf(state->viz, "reset\n");
-        fflush(state->viz);
-    }
 
     // Set data format
     // TODO move to viz.c
@@ -138,35 +158,61 @@ void sim_init_run(sim_state_t * state){
     }
 }
 
-double sim_step(sim_state_t * state){
-    if(!state) return 0.0; // TODO error handling
-
-    state->solver->start_step(state->solver_state);
-
-    state->model_step(state->values, state->major, state->minor, 
-        state->time, state->timestep, state->solver->integrate, state->solver_state
-    );
-
-    double oldtimestep = state->timestep;
-
-    solver_step_end_retval_t r = state->solver->end_step(state->solver_state);
-    state->major = r.major;
-    state->minor = r.minor;
-    state->timestep = r.timestep;
-    state->time += r.timestep;
-
-    return oldtimestep;
-}
-
 void sim_run(double runtime, sim_state_t * state){
     if(!state) return; // TODO error handling
+    if(!state->solver) return;
+
     double starttime = state->time;
+
+    int step_type = 0; // Start with analog step
+    double used_timestep = 0.0;
+    double nxt_analog = 0.0;
+
     while(state->time<=runtime+starttime && !_sim_sighandler_INT){
-        if(state->major){
+
+        if(step_type==0){
+            // Do analog step
+            state->solver->start_step(state->solver_state, 0);
+            used_timestep = state->timestep;
+        }else{
+            // Do discrete domain step
+            state->solver->start_step(state->solver_state, 1);
+            used_timestep = state->sample_at[step_type-1] - state->time;
+            state->sample_at[step_type-1] += state->model_disdomain_ts(step_type-1);
+        }
+
+        // If step was major step output values
+        if(state->major*(step_type==0)){
             sim_plot_data_all(state);
             sim_csv_data_all(state);
         }
-        sim_step(state);
+
+        // Run model step
+        state->model_step(state->values, state->major*(step_type==0),
+            state->minor||(step_type!=0), step_type, state->time, used_timestep,
+            state->solver->integrate, state->solver_state
+        );
+
+        solver_step_end_retval_t r = state->solver->end_step(state->solver_state);
+        state->major = r.major;
+        state->minor = r.minor;
+        state->timestep = r.timestep;
+
+        state->time += used_timestep;
+
+        if(step_type==0) nxt_analog = state->time + state->timestep;
+
+        // Search for next step
+        double nxt = nxt_analog; // Assume analog
+        step_type = 0;
+        for(int i=0; i<state->disdomains; i++){
+            if(state->sample_at[i]<=nxt){
+                nxt = state->sample_at[i];
+                step_type = i+1;
+            }
+        }
+        used_timestep = nxt - state->time;
+
     }
 
     // Update viz
@@ -175,37 +221,84 @@ void sim_run(double runtime, sim_state_t * state){
 
 void sim_run_realtime(double runtime, double updatef, double speed, sim_state_t * state){
     if(!state) return; // TODO error handling
+    if(!state->solver) return;
 
     double starttime = state->time;
+
+    int step_type = 0; // Start with analog step
+    double used_timestep = 0.0;
+    double nxt_analog = 0.0;
 
     // Get current system time
     struct timeval tv;
     double simpassed = 0.0;
 
+    sim_plot_update(state);
     while(state->time<=runtime+starttime && !_sim_sighandler_INT){
         gettimeofday(&tv, NULL);
         unsigned long tstart = 1000000ull*tv.tv_sec + tv.tv_usec;
 
-        if(state->major){
+        if(step_type==0){
+            // Do analog step
+            state->solver->start_step(state->solver_state, 0);
+            used_timestep = state->timestep;
+        }else{
+            // Do discrete domain step
+            state->solver->start_step(state->solver_state, 1);
+            used_timestep = state->sample_at[step_type-1] - state->time;
+            state->sample_at[step_type-1] += state->model_disdomain_ts(step_type-1);
+        }
+
+        // If step was major step output values
+        if(state->major*(step_type==0)){
             sim_plot_data_all(state);
             sim_csv_data_all(state);
         }
-        double delta = sim_step(state);
 
-        simpassed += delta;
+        // Plot data if needed
         if(simpassed>speed/updatef){
             simpassed = 0.0;
             sim_plot_update(state);
         }
+        simpassed += used_timestep;
 
-        // Wait until now + timestep is gone
+        // Run model step
+        state->model_step(state->values, state->major*(step_type==0),
+            state->minor||(step_type!=0), step_type, state->time, used_timestep,
+            state->solver->integrate, state->solver_state
+        );
+
+        solver_step_end_retval_t r = state->solver->end_step(state->solver_state);
+        state->major = r.major;
+        state->minor = r.minor;
+        state->timestep = r.timestep;
+
+        state->time += used_timestep;
+
+        if(step_type==0) nxt_analog = state->time + state->timestep;
+
+        // Search for next step
+        double nxt = nxt_analog; // Assume analog
+        step_type = 0;
+        for(int i=0; i<state->disdomains; i++){
+            if(state->sample_at[i]<=nxt){
+                nxt = state->sample_at[i];
+                step_type = i+1;
+            }
+        }
+        used_timestep = nxt - state->time;
+
+        // Wait for nxt
         gettimeofday(&tv, NULL);
         unsigned long tend = 1000000ull*tv.tv_sec + tv.tv_usec;
         unsigned long tused = tend-tstart;
         // Get usecods needed for timestep
-        unsigned long treq = (unsigned long)(state->timestep/speed*1000000);
-        if(tused<treq)
-            usleep((treq-tused));
+        unsigned long tendreq = tstart + used_timestep*1000000ull;
+        signed long treq = (signed long)tendreq-(signed long)tend;
+        if(treq>0){
+            usleep(treq);
+        }
+
     }
 
     // Update viz

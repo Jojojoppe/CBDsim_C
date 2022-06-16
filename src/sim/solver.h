@@ -9,7 +9,7 @@ typedef struct {
 typedef void * (*solver_init)(void * params);
 typedef void (*solver_deinit)(void * state);
 typedef void (*solver_reset)(void * state);
-typedef void (*solver_start_step)(void * state);
+typedef void (*solver_start_step)(void * state, int passthrough);
 typedef solver_step_end_retval_t (*solver_end_step)(void * state);
 typedef double (*solver_integrate)(double input, double initial, int nr, void * state);
 

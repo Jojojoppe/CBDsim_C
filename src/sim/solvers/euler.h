@@ -12,6 +12,7 @@ typedef struct{
 
 typedef struct{
     double timestep;
+    int passthrough;
     // Internal states of integrators
     d_array_t states;
 } solver_euler_state_t;

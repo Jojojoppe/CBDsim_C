@@ -54,3 +54,9 @@ void sim_plot_data_all(sim_state_t * state){
         fflush(state->viz);
     }
 }
+
+void sim_plot_reset(sim_state_t * state){
+    if(!state) return; if(!state->viz) return;
+    fprintf(state->viz, "reset\n");
+    fflush(state->viz);
+}

@@ -23,8 +23,9 @@ void solver_euler_reset(void * _state){
     }
 }
 
-void solver_euler_start_step(void * _state){
+void solver_euler_start_step(void * _state, int passthrough){
     solver_euler_state_t * state = (solver_euler_state_t*) _state;
+    state->passthrough = passthrough;
 }
 
 solver_step_end_retval_t solver_euler_stop_step(void * _state){
@@ -36,6 +37,8 @@ double solver_euler_integrate(double input, double initial, int nr, void * _stat
     solver_euler_state_t * state = (solver_euler_state_t*) _state;
     if(D_ARRAY_LEN(state->states)<=nr) d_array_insert(&state->states, &initial);
     double * states = D_ARRAY_DP(double, state->states);
+    // Check for passthrough
+    if(state->passthrough) return states[nr];
     states[nr] = states[nr] + state->timestep*input;
     return states[nr];
 }

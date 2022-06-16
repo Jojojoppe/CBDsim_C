@@ -32,8 +32,9 @@ void solver_rk4_reset(void * _state){
     state->step = 3;
 }
 
-void solver_rk4_start_step(void * _state){
+void solver_rk4_start_step(void * _state, int passthrough){
     solver_rk4_state_t * state = (solver_rk4_state_t*) _state;
+    state->passthrough = passthrough;
 }
 
 solver_step_end_retval_t solver_rk4_stop_step(void * _state){
@@ -41,21 +42,21 @@ solver_step_end_retval_t solver_rk4_stop_step(void * _state){
     switch(state->step){
         // Major step
         case 0:
-            state->step = 1;
+            if(!state->passthrough) state->step = 1;
             return (solver_step_end_retval_t){state->timestep, 0, 1};
         // Minor steps
         case 1:
-            state->step = 2;
+            if(!state->passthrough) state->step = 2;
             return (solver_step_end_retval_t){state->timestep, 0, 1};
         case 2:
-            state->step = 3;
+            if(!state->passthrough) state->step = 3;
             return (solver_step_end_retval_t){state->timestep, 0, 1};
         case 3:
-            state->step = 0;
+            if(!state->passthrough) state->step = 0;
             return (solver_step_end_retval_t){state->timestep, 1, 0};
         // Error... return to Major step
         default:
-            state->step = 0;
+            if(!state->passthrough) state->step = 0;
             return (solver_step_end_retval_t){state->timestep, 1, 0};
     }
 }
@@ -73,6 +74,8 @@ double solver_rk4_integrate(double input, double initial, int nr, void * _state)
     double * prev1 = D_ARRAY_DP(double, state->prev1);
     double * prev2 = D_ARRAY_DP(double, state->prev2);
     double * prev3 = D_ARRAY_DP(double, state->prev3);
+    // Check for passthrough
+    if(state->passthrough) return states[nr];
     states[nr] = states[nr] + state->timestep/3*(prev3[nr]/2 + prev2[nr] + prev1[nr] + input/2);
     prev3[nr] = prev2[nr];
     prev2[nr] = prev1[nr];

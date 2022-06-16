@@ -12,6 +12,7 @@ typedef struct{
 
 typedef struct{
     double timestep;
+    int passthrough;
     // Step in RK4 (1 major 3 minor)
     int step;
     // Internal states of integrators
