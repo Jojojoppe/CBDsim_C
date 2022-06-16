@@ -19,7 +19,10 @@ typedef struct{
     d_array_t states;
     d_array_t prev1;
     d_array_t prev2;
-    d_array_t prev3;
+    d_array_t prev3;    
+    // Internal states of differentiators
+    d_array_t dstates;
+    d_array_t dstates2;
 } solver_rk4_state_t;
 
 #endif

@@ -12,6 +12,7 @@ typedef void (*solver_reset)(void * state);
 typedef void (*solver_start_step)(void * state, int passthrough);
 typedef solver_step_end_retval_t (*solver_end_step)(void * state);
 typedef double (*solver_integrate)(double input, double initial, int nr, void * state);
+typedef double (*solver_differentiate)(double input, double initial, int nr, void * state);
 
 typedef struct solver_s{
     solver_init init;
@@ -20,6 +21,7 @@ typedef struct solver_s{
     solver_start_step start_step;
     solver_end_step end_step;
     solver_integrate integrate;
+    solver_differentiate differentiate;
 } solver_t; 
 
 #endif

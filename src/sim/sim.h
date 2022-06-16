@@ -18,7 +18,7 @@ typedef struct sim_state_s {
     int (*model_disdomains)();
     double (*model_disdomain_ts)(int);
     void (*model_init)(double*);
-    void (*model_step)(double*,int,int,int,double,double,solver_integrate,void*);
+    void (*model_step)(double*,int,int,int,double,double,solver_integrate,solver_differentiate,void*);
 
     // Run information
     double * values;

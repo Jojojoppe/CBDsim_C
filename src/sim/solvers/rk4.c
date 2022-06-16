@@ -9,6 +9,8 @@ void * solver_rk4_init(void * _params){
     D_ARRAY_INIT(double, &state->prev1);
     D_ARRAY_INIT(double, &state->prev2);
     D_ARRAY_INIT(double, &state->prev3);
+    D_ARRAY_INIT(double, &state->dstates);
+    D_ARRAY_INIT(double, &state->dstates2);
     state->timestep = params->timestep/4.0;
     state->step = 3; // Begin on step 0, major step
     return (void*)state;
@@ -17,6 +19,8 @@ void * solver_rk4_init(void * _params){
 void solver_rk4_deinit(void * _state){
     solver_rk4_state_t * state = (solver_rk4_state_t*) _state;
     d_array_deinit(&state->states);
+    d_array_deinit(&state->dstates);
+    d_array_deinit(&state->dstates2);
     d_array_deinit(&state->prev1);
     d_array_deinit(&state->prev2);
     d_array_deinit(&state->prev3);
@@ -26,6 +30,8 @@ void solver_rk4_deinit(void * _state){
 void solver_rk4_reset(void * _state){
     solver_rk4_state_t * state = (solver_rk4_state_t*) _state;
     for(int i=0; i<D_ARRAY_LEN(state->states); i++) (D_ARRAY_DP(double, state->states))[i] = 0.0;
+    for(int i=0; i<D_ARRAY_LEN(state->dstates); i++) (D_ARRAY_DP(double, state->dstates))[i] = 0.0;
+    for(int i=0; i<D_ARRAY_LEN(state->dstates2); i++) (D_ARRAY_DP(double, state->dstates2))[i] = 0.0;
     for(int i=0; i<D_ARRAY_LEN(state->prev1); i++) (D_ARRAY_DP(double, state->prev1))[i] = 0.0;
     for(int i=0; i<D_ARRAY_LEN(state->prev2); i++) (D_ARRAY_DP(double, state->prev2))[i] = 0.0;
     for(int i=0; i<D_ARRAY_LEN(state->prev3); i++) (D_ARRAY_DP(double, state->prev2))[i] = 0.0;
@@ -83,6 +89,18 @@ double solver_rk4_integrate(double input, double initial, int nr, void * _state)
     return states[nr];
 }
 
+double solver_rk4_differentiate(double input, double initial, int nr, void * _state){    
+    solver_rk4_state_t * state = (solver_rk4_state_t*) _state;
+    if(D_ARRAY_LEN(state->dstates)<=nr) d_array_insert(&state->dstates, &input);
+    double * dstates = D_ARRAY_DP(double, state->dstates);
+    double * dstates2 = D_ARRAY_DP(double, state->dstates2);
+    // Check for passthrough
+    if(state->passthrough) return dstates2[nr];
+    dstates2[nr] = (input-dstates[nr])/state->timestep;
+    dstates[nr] = input;
+    return dstates2[nr];
+}
+
 const solver_t solver_rk4 = {
     solver_rk4_init,
     solver_rk4_deinit,
@@ -90,4 +108,5 @@ const solver_t solver_rk4 = {
     solver_rk4_start_step,
     solver_rk4_stop_step,
     solver_rk4_integrate,
+    solver_rk4_differentiate,
 };

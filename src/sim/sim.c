@@ -190,7 +190,7 @@ void sim_run(double runtime, sim_state_t * state){
         // Run model step
         state->model_step(state->values, state->major*(step_type==0),
             state->minor||(step_type!=0), step_type, state->time, used_timestep,
-            state->solver->integrate, state->solver_state
+            state->solver->integrate, state->solver->differentiate, state->solver_state
         );
 
         solver_step_end_retval_t r = state->solver->end_step(state->solver_state);
@@ -265,7 +265,7 @@ void sim_run_realtime(double runtime, double updatef, double speed, sim_state_t 
         // Run model step
         state->model_step(state->values, state->major*(step_type==0),
             state->minor||(step_type!=0), step_type, state->time, used_timestep,
-            state->solver->integrate, state->solver_state
+            state->solver->integrate, state->solver->differentiate, state->solver_state
         );
 
         solver_step_end_retval_t r = state->solver->end_step(state->solver_state);
