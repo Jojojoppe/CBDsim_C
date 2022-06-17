@@ -1,7 +1,7 @@
 #ifndef __H_MODEL
 #define __H_MODEL
 
-#include "../dynamic_array.h"
+#include "../general/dynamic_array.h"
 #include "signal.h"
 #include "param.h"
 #include "block.h"

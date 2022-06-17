@@ -1,7 +1,7 @@
 #ifndef __H_MODEL_BLOCK
 #define __H_MODEL_BLOCK
 
-#include "../dynamic_array.h"
+#include "../general/dynamic_array.h"
 
 #include <stdio.h>
 

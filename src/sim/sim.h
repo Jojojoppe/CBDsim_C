@@ -16,7 +16,7 @@ typedef struct sim_state_s {
     char * (*model_value_name)(int);
     double (*model_value_init)(int);
     int (*model_disdomains)();
-    double (*model_disdomain_ts)(int);
+    char * (*model_domain_name)(int);
     void (*model_init)(double*);
     void (*model_step)(double*,int,int,int,double,double,solver_integrate,solver_differentiate,void*);
 
@@ -24,6 +24,7 @@ typedef struct sim_state_s {
     double * values;
     double time, timestep;
     int disdomains;
+    double * sample_times;
     double * sample_at;
     int major, minor;
 
@@ -40,11 +41,19 @@ int sim_compile_model(const char * modelcfile, const char * modelfile, sim_state
 int sim_load_model(const char * modelfile, sim_state_t * state);
 
 typedef struct{
+    double sampling_time;
+} sim_discrete_settings_t;
+
+typedef struct{
     // Visualizer settings
     const char * viz;
     // Solver settings
     const solver_t * solver;
     void * solver_settings;
+    // Discrete domain settings
+    sim_discrete_settings_t * discrete_settings;
+    size_t nr_discrete_settings;
+
 } sim_run_settings_t;
 
 void sim_init_run(sim_run_settings_t * settings, sim_state_t * state);

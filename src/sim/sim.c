@@ -24,21 +24,17 @@ sim_state_t * sim_init(){
 void sim_deinit(sim_state_t * state){
     if(!state) return;
     if(state->solver) state->solver->deinit(state->solver_state);
-    if(state->model){
-        dlclose(state->model);
-    }
-    if(state->values){
-        free(state->values);
-    }
+    if(state->model) dlclose(state->model);
+    if(state->values) free(state->values);
     if(state->viz){
         // TODO move to plot.c
         fprintf(state->viz, "stop\n");
         // fprintf(state->viz, "quit\n");
         pclose(state->viz);
     }
-    if(state->csv){
-        fclose(state->csv);
-    }
+    if(state->csv) fclose(state->csv);
+    if(state->sample_times) free(state->sample_times);
+    if(state->sample_at) free(state->sample_at);
     free(state);
 }
 
@@ -84,7 +80,7 @@ int sim_load_model(const char * modelfile, sim_state_t * state){
     if(dlerror()) return -6;
     state->model_disdomains = dlsym(state->model, "disdomains");
     if(dlerror()) return -7;
-    state->model_disdomain_ts = dlsym(state->model, "disdomain_ts");
+    state->model_domain_name = dlsym(state->model, "domain_name");
     if(dlerror()) return -8;
 
     return 0;
@@ -98,11 +94,15 @@ void sim_init_run(sim_run_settings_t * settings, sim_state_t * state){
     if(state->values) free(state->values);
     // if already sample_at array free
     if(state->sample_at) free(state->sample_at);
+    // if already sample_times array free
+    if(state->sample_times) free(state->sample_times);
 
     // Allocate values
     state->values = calloc(state->model_values(), sizeof(double));
     // Allocate sample at array
     state->sample_at = calloc(state->model_disdomains(), sizeof(double));
+    // Allocate sample times array
+    state->sample_times = calloc(state->model_disdomains(), sizeof(double));
     // Clear all other values
     state->time = state->timestep = 0;
     state->major = 1;
@@ -112,6 +112,17 @@ void sim_init_run(sim_run_settings_t * settings, sim_state_t * state){
     // Load initial values
     for(int i=0; i<state->model_values(); i++){
         state->values[i] = state->model_value_init(i);
+    }
+
+    // Load sample times
+    double sampletime_last = 1.0;
+    for(int i=0; i<state->disdomains; i++){
+        if(i<settings->nr_discrete_settings){
+            state->sample_times[i] = settings->discrete_settings[i].sampling_time;
+            sampletime_last = state->sample_times[i];
+        }else{
+            state->sample_times[i] = sampletime_last;
+        }
     }
 
     // Create solver if not exists or if different solver
@@ -178,7 +189,7 @@ void sim_run(double runtime, sim_state_t * state){
             // Do discrete domain step
             state->solver->start_step(state->solver_state, 1);
             used_timestep = state->sample_at[step_type-1] - state->time;
-            state->sample_at[step_type-1] += state->model_disdomain_ts(step_type-1);
+            state->sample_at[step_type-1] += state->sample_times[step_type-1];
         }
 
         // If step was major step output values
@@ -246,7 +257,7 @@ void sim_run_realtime(double runtime, double updatef, double speed, sim_state_t 
             // Do discrete domain step
             state->solver->start_step(state->solver_state, 1);
             used_timestep = state->sample_at[step_type-1] - state->time;
-            state->sample_at[step_type-1] += state->model_disdomain_ts(step_type-1);
+            state->sample_at[step_type-1] += state->sample_times[step_type-1];
         }
 
         // If step was major step output values

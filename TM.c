@@ -30,11 +30,11 @@ int disdomains(){
 	return 2;
 }
 
-double disdomain_ts(int i){
-	double tsses[] = {
-		0.3, 1.0,
+char * domain_name(int i){
+	char * names[] = {
+		"cont", "dis1", "dis2",
 	};
-	return tsses[i];
+	return names[i];
 }
 
 void init(double * values){

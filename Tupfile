@@ -1,20 +1,24 @@
 include_rules
 
-src_c = \
-    src/dynamic_array.c \
+# libsim.so
+# --------
+src_sim = \
+    src/general/dynamic_array.c \
     src/sim/solvers/euler.c \
     src/sim/solvers/rk4.c \
     src/sim/plot.c \
     src/sim/csv.c \
-    src/sim/sim.c \
-    src/model/signal.c \
-    src/model/param.c \
-    src/model/variable.c \
-    src/model/block.c \
-    src/model/model.c \
-    src/model/compile.c \
-    src/main.c
+    src/sim/sim.c 
 
+CFLAGS = -g -fPIC
+LDFLAGS = -g -shared
+LDLIBS = -lm -ldl
+
+: foreach $(src_sim) |> !cc |> out/sim/%B.o
+: out/sim/*.o |> !ld |> out/libsim.so
+
+# libmodel.so
+# -----------
 src_blocks_src = \
     src/model/blocks/src/sine.c \
     src/model/blocks/src/cosine.c \
@@ -38,13 +42,32 @@ src_blocks_std = \
     src/model/blocks/std/plusmin.c \
     src/model/blocks/std/multdiv.c
 
-CFLAGS += -g
-LDFLAGS += -g
-LDLIBS += -lm -ldl
+src_model = \
+    src/model/signal.c \
+    src/model/param.c \
+    src/model/variable.c \
+    src/model/block.c \
+    src/model/model.c \
+    src/model/compile.c
 
-: foreach $(src_c) |> !cc |> out/%B.o
-: foreach $(src_blocks_src) |> !cc |> out/blocks_src_%B.o
-: foreach $(src_blocks_std) |> !cc |> out/blocks_std%B.o
-: out/*.o |> !ld |> out/main
+CFLAGS = -g -fPIC
+LDFLAGS = -g -shared
+LDLIBS = -lm -ldl
+
+: foreach $(src_model) |> !cc |> out/model/%B.o
+: foreach $(src_blocks_src) |> !cc |> out/model/blocks_src_%B.o
+: foreach $(src_blocks_std) |> !cc |> out/model/blocks_std%B.o
+: out/model/*.o |> !ld |> out/libmodel.so
+
+# Test binary
+# -----------
+src_test = src/test.c
+
+CFLAGS = -g
+LDFLAGS = -g -L./out
+LDLIBS = -lsim -lmodel
+
+: foreach $(src_test) |> !cc |> out/%B.o
+: out/*.o out/libsim.so out/libmodel.so |> !ld |> out/test
 
 .gitignore

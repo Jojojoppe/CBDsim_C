@@ -2,7 +2,7 @@
 #define __H_SOLVERS_RK4
 
 #include "../solver.h"
-#include "../../dynamic_array.h"
+#include "../../general/dynamic_array.h"
 
 const extern solver_t solver_rk4;
 
