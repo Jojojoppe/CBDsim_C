@@ -19,44 +19,16 @@ LDLIBS = -lm -ldl
 
 # libmodel.so
 # -----------
-src_blocks_src = \
-    src/model/blocks/src/sine.c \
-    src/model/blocks/src/cosine.c \
-    src/model/blocks/src/step.c \
-    src/model/blocks/src/istep.c \
-    src/model/blocks/src/impulse.c \
-    src/model/blocks/src/pulse.c \
-    src/model/blocks/src/pulsewave.c \
-    src/model/blocks/src/constant.c \
-    src/model/blocks/src/ramp.c
-
-src_blocks_std = \
-    src/model/blocks/std/gain.c \
-    src/model/blocks/std/attenuate.c \
-    src/model/blocks/std/integrate.c \
-    src/model/blocks/std/sine.c \
-    src/model/blocks/std/cosine.c \
-    src/model/blocks/std/tan.c \
-    src/model/blocks/std/log.c \
-    src/model/blocks/std/exp.c \
-    src/model/blocks/std/plusmin.c \
-    src/model/blocks/std/multdiv.c
-
 src_model = \
-    src/model/signal.c \
-    src/model/param.c \
-    src/model/variable.c \
-    src/model/block.c \
-    src/model/model.c \
-    src/model/compile.c
+    src/general/hashmap.c \
+    src/general/dynamic_array.c \
+    src/model/model.c
 
 CFLAGS = -g -fPIC
 LDFLAGS = -g -shared
 LDLIBS = -lm -ldl
 
 : foreach $(src_model) |> !cc |> out/model/%B.o
-: foreach $(src_blocks_src) |> !cc |> out/model/blocks_src_%B.o
-: foreach $(src_blocks_std) |> !cc |> out/model/blocks_std%B.o
 : out/model/*.o |> !ld |> out/libmodel.so
 
 # Test binary

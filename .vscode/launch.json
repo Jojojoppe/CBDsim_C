@@ -8,7 +8,7 @@
             "name": "(gdb) launch solver main",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/out/main",
+            "program": "${workspaceFolder}/out/test",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

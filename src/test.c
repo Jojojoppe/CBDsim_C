@@ -4,9 +4,57 @@
 #include "sim/solvers/euler.h"
 #include "sim/solvers/rk4.h"
 
+#include "model/model.h"
+
+const block_definition_t src_sine = {
+    .type = "src_sine",
+    .genparams_size = 0,
+    .gen = NULL,
+    .gen_init = NULL,
+    .names = {
+        // Inputs
+        0,
+        // Outputs
+        "out", 0,
+        // Parameters
+        "A", "f", 0,
+        // Variables,
+        0,
+    },
+};
+
+const block_definition_t std_gain = {
+    .type = "std_gain",
+    .genparams_size = 0,
+    .gen = NULL,
+    .gen_init = NULL,
+    .names = {
+        // Inputs
+        "in", 0,
+        // Outputs
+        "out", 0,
+        // Parameters
+        "K", 0,
+        // Variables,
+        0,
+    },
+};
+
 int main(int argc, char ** argv){
     int error = 0;
 
+    model_t * model = model_init("testmodel");
+
+    int bsrc = model_add_block("src", &src_sine, (double[]){1.0, 0.5}, model);
+    int bgn = model_add_block("gain", &std_gain, (double[]){2.5}, model);
+
+    model_debug(model);
+
+    model_deinit(model);
+
+    return 0;
+
+    /*
     // Load model and run simulation
     sim_state_t * state = sim_init();
     if((error = sim_compile_model("TM.c", "model.so", state))) goto end;
@@ -43,4 +91,6 @@ int main(int argc, char ** argv){
 end:
     sim_deinit(state);
     return error;
+
+    */
 }

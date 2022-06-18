@@ -15,7 +15,7 @@ d_array_error_t d_array_init(d_array_t * array, size_t elem_size){
     array->elem_size = elem_size;
     array->filled_size = 0;
     array->begin = array_data;
-    array->end = array_data + (elem_size*D_ARRAY_START_SIZE);
+    array->end = array_data + (elem_size*0);
 
     return D_ARRAY_ERROR_OKAY;
 }
@@ -58,6 +58,7 @@ d_array_error_t d_array_insert(d_array_t * array, void * data){
 
     void * insert_at = array->begin + (array->filled_size*array->elem_size);
     array->filled_size++;
+    array->end = array->begin + (array->elem_size*array->filled_size);
 
     memcpy(insert_at, data, array->elem_size);
 
@@ -108,7 +109,7 @@ d_array_error_t d_array_resize(d_array_t * array, size_t size){
         free(array->begin);
         
         array->begin = new_begin;
-        array->end = new_begin + (array->elem_size*size);
+        array->end = new_begin + (array->elem_size*array->filled_size);
     }
 
     array->size = size;
