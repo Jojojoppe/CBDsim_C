@@ -21,8 +21,6 @@ model_t * model_init(char * name){
     D_ARRAY_INIT(variable_t, &m->variables);
     D_ARRAY_INIT(signal_t, &m->signals);
     D_ARRAY_INIT(block_t, &m->blocks);
-    D_ARRAY_INIT(bond_t, &m->bonds);
-    D_ARRAY_INIT(element_t, &m->elements);
 
     D_ARRAY_INIT(int, &m->in);
     D_ARRAY_INIT(int, &m->out);
@@ -58,11 +56,6 @@ void model_deinit(model_t * model){
     }
     d_array_deinit(&model->signals);
 
-    for(D_ARRAY_LOOP(bond_t, it, model->bonds)){
-        if(it->name) free(it->name);
-    }
-    d_array_deinit(&model->bonds);
-
     for(D_ARRAY_LOOP(block_t, it, model->blocks)){
         d_array_deinit(&it->in);
         d_array_deinit(&it->out);
@@ -72,14 +65,6 @@ void model_deinit(model_t * model){
         if(it->gen_params) free(it->gen_params);
     }
     d_array_deinit(&model->blocks);
-
-    for(D_ARRAY_LOOP(element_t, it, model->elements)){
-        d_array_deinit(&it->in);
-        d_array_deinit(&it->out);
-        if(it->name) free(it->name);
-        if(it->gen_params) free(it->gen_params);
-    }
-    d_array_deinit(&model->elements);
 
     free(model);
 }
@@ -104,22 +89,24 @@ void model_debug(model_t * model){
 
     printf("Signals:\n");
     for(D_ARRAY_LOOP(signal_t, it, model->signals)){
-        printf("\t%s\n", it->name);
-    }
-
-    printf("Bonds:\n");
-    for(D_ARRAY_LOOP(bond_t, it, model->bonds)){
-        printf("\t%s\n", it->name);
+        printf("\t%s [", it->name);
+        if(it->from_index>=0){
+            signal_t * from = D_ARRAY_ATP(signal_t, &model->signals, it->from_index);
+            printf("%s --> {", from->name);
+        }else{
+            printf("xx --> {");
+        }
+        for(D_ARRAY_LOOP(int, jt, it->to_index)){
+            if(*jt<0) continue;
+            signal_t * to = D_ARRAY_ATP(signal_t, &model->signals, *jt);
+            printf("%s,", to->name);
+        }
+        printf("}]\n");
     }
 
     printf("Blocks:\n");
     for(D_ARRAY_LOOP(block_t, it, model->blocks)){
         printf("\t%s [-> %s]\n", it->name, it->block_def->type);
-    }
-
-    printf("Elements:\n");
-    for(D_ARRAY_LOOP(element_t, it, model->elements)){
-        printf("\t%s [-> %s]\n", it->name, it->element_def->type);
     }
 }
 
@@ -179,7 +166,7 @@ int model_add_signal(char * name, model_t * model){
 
     signal_t s = {
         .name = n,
-        .from_index = 0,
+        .from_index = -1,
     };
 
     D_ARRAY_INIT(int, &s.to_index);
@@ -334,4 +321,52 @@ int model_add_block(char * name, const block_definition_t * definition, double *
     }
 
     return id;
+}
+
+int model_connect_signals(char * name_out, char * name_in, model_t * model){
+    if(!model) return -1;
+    if(!name_out) return -1;
+    if(!name_in) return -1;
+
+    // Get signal indices
+    uintptr_t s_out_i;
+    if(!hashmap_get(model->hmap, name_out, strlen(name_out), &s_out_i)){
+        // TODO error handling
+        return -1;
+    }
+    uintptr_t s_in_i;
+    if(!hashmap_get(model->hmap, name_in, strlen(name_in), &s_in_i)){
+        // TODO error handling
+        return -1;
+    }
+
+    // Get signals
+    signal_t * s_out, * s_in;
+    s_out = D_ARRAY_ATP(signal_t, &model->signals, s_out_i);
+    s_in = D_ARRAY_ATP(signal_t, &model->signals, s_in_i);
+
+    // Check if name_in is already connected
+    if(s_in->from_index>=0){
+        // TODO error handling
+        return -1;
+    }
+
+    // Connect signals
+    s_in->from_index = s_out_i;
+    d_array_insert(&s_out->to_index, &s_in_i);
+
+    return 0;
+}
+
+int model_connect_signals_named(char * name, char * name_out, char * name_in, model_t * model){
+    if(!model) return -1;
+    if(!name) return -1;
+    if(!name_out) return -1;
+    if(!name_in) return -1;
+
+    model_add_signal(name, model);
+    model_connect_signals(name_out, name, model);
+    model_connect_signals(name, name_in, model);
+
+    return 0;
 }

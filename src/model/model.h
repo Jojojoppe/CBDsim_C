@@ -19,10 +19,6 @@ typedef struct{
     d_array_t signals;
     d_array_t blocks;
 
-    // Bond graph
-    d_array_t bonds; // note: each bond has one f and e
-    d_array_t elements;
-
     // Name to index (for all) hashmap
     // Note: does not own the keys
     hashmap * hmap;
@@ -48,12 +44,6 @@ typedef struct{
     d_array_t to_index;
 } signal_t;
 
-typedef struct{
-    char * name;
-    int from_index;
-    int to_index;
-    int causality; // 0 means effort out (effort at to_index)
-} bond_t;
 
 // Equations generating types
 // --------------------------
@@ -83,23 +73,6 @@ typedef struct{
     void * gen_params;
     const block_definition_t * block_def;
 } block_t;
-
-typedef struct{
-    char * type;        // Name of the type of the block
-    int inputs;         // Number of inputs for this block. -1 for unknown amount
-    int outputs;        // Number of outputs for this block. -1 for unknown amount
-    size_t genparams_size;   // Size of generation parameter block
-    // Output generation functions
-    equations_gen_f gen;
-    equations_gen_f gen_init;
-} element_definition_t;
-
-typedef struct{
-    char * name;
-    d_array_t in, out;
-    void * gen_params;
-    const element_definition_t * element_def;
-} element_t;
 
 /* Initialize model
  * ----------------
@@ -172,5 +145,28 @@ int model_add_signal(char * name, model_t * model);
  *  -> int : index/ID of the block. -1 if error
  */
 int model_add_block(char * name, const block_definition_t * definition, double * parameters, model_t * model);
+
+/* Connect signals
+ * ---------------
+ *  Connect two existing signals
+ * 
+ *  char * name_out : output side of a signal to connect to name_in
+ *  char * name_in : input side of a signal to connect to name_out
+ *  model_t * model : model object
+ *  -> int : 0 if succeeded, anything else for errors
+ */
+int model_connect_signals(char * name_out, char * name_in, model_t * model);
+
+/* Connect signals with name
+ * -------------------------
+ *  Connect two existing signals and add a name to the connection
+ * 
+ *  char * name : name of the connection
+ *  char * name_out : output side of a signal to connect to name_in
+ *  char * name_in : input side of a signal to connect to name_out
+ *  model_t * model : model object
+ *  -> int : 0 if succeeded, anything else for errors
+ */
+int model_connect_signals_named(char * name, char * name_out, char * name_in, model_t * model);
 
 #endif

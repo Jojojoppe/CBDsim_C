@@ -48,6 +48,8 @@ int main(int argc, char ** argv){
     int bsrc = model_add_block("src", &src_sine, (double[]){1.0, 0.5}, model);
     int bgn = model_add_block("gain", &std_gain, (double[]){2.5}, model);
 
+    model_connect_signals("src/out", "gain/in", model);
+
     model_debug(model);
 
     model_deinit(model);
