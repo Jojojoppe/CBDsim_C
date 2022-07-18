@@ -19,6 +19,10 @@ typedef struct{
     d_array_t signals;
     d_array_t blocks;
 
+    // Submodels
+    // Note: No references to submodels! model owns its submodels
+    d_array_t submodels;
+
     // Name to index (for all) hashmap
     // Note: does not own the keys
     hashmap * hmap;
@@ -73,6 +77,10 @@ typedef struct{
     void * gen_params;
     const block_definition_t * block_def;
 } block_t;
+
+#define MODEL_INPUT 1
+#define MODEL_OUTPUT 0
+#define MODEL_INOUT_NOARRAY 0
 
 /* Initialize model
  * ----------------
@@ -146,6 +154,30 @@ int model_add_signal(char * name, model_t * model);
  */
 int model_add_block(char * name, const block_definition_t * definition, double * parameters, model_t * model);
 
+/* Add model port
+ * --------------
+ *  Add input or output to a model
+ * 
+ *  char * name : name of the input/output. Must be a unique name in the model
+ *  int direction : 1 for input, 0 for output
+ *  int arr : number of elements in array. 0 for scalar
+ *  model_t * model : model object
+ *  -> int : index/ID of the signal. -1 if error. If array ID of first
+ */
+int model_add_inout(char * name, int direction, int arr, model_t * model);
+
+/* Add submodel
+ * ------------
+ *  Add a submodel to the model
+ * 
+ *  Note: model owns its submodels!!
+ *  char * name : name of the submodel
+ *  model_t ** submodel : pointer to submodel pointer. May be NULL
+ *  model_t * model : model object
+ *  -> int : index/ID of the submodel. -1 if error
+ */
+int model_add_submodel(char * name, model_t ** submodel, model_t * model);
+
 /* Connect signals
  * ---------------
  *  Connect two existing signals
@@ -168,5 +200,26 @@ int model_connect_signals(char * name_out, char * name_in, model_t * model);
  *  -> int : 0 if succeeded, anything else for errors
  */
 int model_connect_signals_named(char * name, char * name_out, char * name_in, model_t * model);
+
+/* Update ports and signals
+ * ------------------------
+ *  Update connections, inputs and outputs and signals
+ * 
+ *  model_t * model
+ *  -> void
+ */
+void model_update(model_t * model);
+
+/* Flatten
+ * -------
+ *  Flatten model in order to compile
+ * 
+ *  input stays untouched and a full copy will be created in output
+ * 
+ *  model_t * in : model to flatten
+ *  model_t ** out : output. Model object is created by this function
+ *  -> int : 0 if succeeded, anything else for errors
+ */
+int model_flatten(model_t * in, model_t ** out);
 
 #endif

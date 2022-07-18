@@ -43,16 +43,31 @@ const block_definition_t std_gain = {
 int main(int argc, char ** argv){
     int error = 0;
 
-    model_t * model = model_init("testmodel");
+    model_t * toplevel = model_init("toplevel");
 
-    int bsrc = model_add_block("src", &src_sine, (double[]){1.0, 0.5}, model);
-    int bgn = model_add_block("gain", &std_gain, (double[]){2.5}, model);
+    model_t * modelA;
+    model_add_submodel("modelA", &modelA, toplevel);
+    model_add_inout("O", MODEL_OUTPUT, MODEL_INOUT_NOARRAY, modelA);
+    model_add_block("src", &src_sine, (double[]){1.0, 0.5}, modelA);
+    model_add_block("gain", &std_gain, (double[]){2.5}, modelA);
+    model_connect_signals("src/out", "gain/in", modelA);
+    model_connect_signals("gain/out", "O", modelA);
 
-    model_connect_signals("src/out", "gain/in", model);
+    model_update(toplevel);
 
-    model_debug(model);
+    model_add_block("gain", &std_gain, (double[]){2.0}, toplevel);
+    model_connect_signals("modelA/O", "gain/in", toplevel);
 
-    model_deinit(model);
+    model_debug(toplevel);
+    model_debug(modelA);
+
+    model_t * flat;
+    model_flatten(toplevel, &flat);
+    model_debug(flat);
+
+    model_deinit(flat);
+
+    model_deinit(toplevel);
 
     return 0;
 

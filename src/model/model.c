@@ -21,6 +21,7 @@ model_t * model_init(char * name){
     D_ARRAY_INIT(variable_t, &m->variables);
     D_ARRAY_INIT(signal_t, &m->signals);
     D_ARRAY_INIT(block_t, &m->blocks);
+    D_ARRAY_INIT(model_t*, &m->submodels);
 
     D_ARRAY_INIT(int, &m->in);
     D_ARRAY_INIT(int, &m->out);
@@ -66,6 +67,11 @@ void model_deinit(model_t * model){
     }
     d_array_deinit(&model->blocks);
 
+    for(D_ARRAY_LOOP(model_t*, it, model->submodels)){
+        model_deinit(*it);
+    }
+    d_array_deinit(&model->submodels);
+
     free(model);
 }
 
@@ -110,218 +116,6 @@ void model_debug(model_t * model){
     }
 }
 
-int model_add_parameter(char * name, double value, model_t * model){
-    if(!model) return -1;
-    if(!name) return -1;
-
-    char * n = malloc(strlen(name)+1);
-    if(!n) return -1;
-    strcpy(n, name);
-
-    parameter_t p = {
-        .name = n,
-        .value = value,
-    };
-
-    if(d_array_insert(&model->parameters, &p)!=D_ARRAY_ERROR_OKAY){
-        free(n);
-        return -1;
-    }
-
-    int id = D_ARRAY_LEN(model->parameters)-1;
-    hashmap_set(model->hmap, n, strlen(n), id);
-    return id;
-}
-
-int model_add_variable(char * name, double value, model_t * model){
-    if(!model) return -1;
-    if(!name) return -1;
-
-    char * n = malloc(strlen(name)+1);
-    if(!n) return -1;
-    strcpy(n, name);
-
-    variable_t v = {
-        .name = n,
-        .value = value,
-    };
-
-    if(d_array_insert(&model->variables, &v)!=D_ARRAY_ERROR_OKAY){
-        free(n);
-        return -1;
-    }
-
-    int id = D_ARRAY_LEN(model->variables)-1;
-    hashmap_set(model->hmap, n, strlen(n), id);
-    return id;
-}
-
-int model_add_signal(char * name, model_t * model){
-    if(!model) return -1;
-    if(!name) return -1;
-
-    char * n = malloc(strlen(name)+1);
-    if(!n) return -1;
-    strcpy(n, name);
-
-    signal_t s = {
-        .name = n,
-        .from_index = -1,
-    };
-
-    D_ARRAY_INIT(int, &s.to_index);
-
-    if(d_array_insert(&model->signals, &s)!=D_ARRAY_ERROR_OKAY){
-        free(n);
-        d_array_deinit(&s.to_index);
-        return -1;
-    }
-
-    int id = D_ARRAY_LEN(model->signals)-1;
-    hashmap_set(model->hmap, n, strlen(n), id);
-    return id;
-}
-
-int model_add_block(char * name, const block_definition_t * definition, double * parameters, model_t * model){
-    if(!model) return -1;
-    if(!name) return -1;
-    if(!definition) return -1;
-
-    char * n = malloc(strlen(name)+1);
-    if(!n) return -1;
-    strcpy(n, name);
-
-    void * gp = NULL;
-    if(definition->genparams_size){
-        gp = calloc(1, definition->genparams_size);
-        if(!gp){
-            free(n);
-            return -1;
-        }
-    }
-
-    block_t b = {
-        .name = n,
-        .block_def = definition,
-        .gen_params = gp,
-    };
-
-    D_ARRAY_INIT(int, &b.in);
-    D_ARRAY_INIT(int, &b.out);
-    D_ARRAY_INIT(int, &b.parameters);
-    D_ARRAY_INIT(int, &b.variables);
-
-    if(d_array_insert(&model->blocks, &b)!=D_ARRAY_ERROR_OKAY){
-        free(n);
-        free(gp);
-        d_array_deinit(&b.in);
-        d_array_deinit(&b.out);
-        d_array_deinit(&b.parameters);
-        d_array_deinit(&b.variables);
-        return -1;
-    }
-
-    int id = D_ARRAY_LEN(model->blocks)-1;
-    hashmap_set(model->hmap, n, strlen(n), id);
-
-    // Create signals, parameters and variables if needed
-    // If not needed (global) always add to hashmap
-    int nindex = 0;
-    int arr = 0;
-    // Start with inputs
-    while(definition->names[nindex]!=0){
-        const char * in_name = definition->names[nindex];
-        if((intptr_t)in_name==-1){
-            // TODO implement
-        }else if((intptr_t)in_name==-2){
-            // TODO implement
-        }else if((intptr_t)in_name<32 && (intptr_t)in_name>0){
-            // TODO implement
-        }else{
-            size_t in_name_len = strlen(in_name);
-            // Allocate space for combined name
-            char * tot_name = calloc(in_name_len+strlen(name)+strlen("/")+5, 1);
-            // TODO error handling
-            if(arr) sprintf(tot_name, "%s/%s[%d]", name, in_name, arr--);
-            else sprintf(tot_name, "%s/%s", name, in_name);
-            model_add_signal(tot_name, model);
-            free(tot_name);
-        }
-        nindex++;
-    }
-    // Goto outputs
-    nindex++;
-    arr = 0;
-    while(definition->names[nindex]!=0){
-        const char * out_name = definition->names[nindex];
-        if((intptr_t) out_name==-1){
-            // TODO implement
-        }else if((intptr_t) out_name==-2){
-            // TODO implement
-        }else if((intptr_t) out_name<32 && (intptr_t)out_name>0){
-            // TODO implement
-        }else{
-            size_t out_name_len = strlen(out_name);
-            // Allocate space for combined name
-            char * tot_name = calloc(out_name_len+strlen(name)+strlen("/")+5, 1);
-            // TODO error handling
-            if(arr) sprintf(tot_name, "%s/%s[%d]", name, out_name, arr--);
-            else sprintf(tot_name, "%s/%s", name, out_name);
-            model_add_signal(tot_name, model);
-            free(tot_name);
-        }
-        nindex++;
-    }
-    // Goto parameters
-    nindex++;
-    int pindex = 0;
-    arr = 0;
-    while(definition->names[nindex]!=0){
-        const char * par_name = definition->names[nindex];
-        if((intptr_t) par_name==-1){
-            // TODO implement
-        }else if((intptr_t) par_name==-2){
-            // TODO implement
-        }else if((intptr_t) par_name<32 && (intptr_t)par_name>0){
-            // TODO implement
-        }else{
-            size_t par_name_len = strlen(par_name);
-            // Allocate space for combined name
-            char * tot_name = calloc(par_name_len+strlen(name)+strlen("/")+5, 1);
-            // TODO error handling
-            if(arr) sprintf(tot_name, "%s/%s[%d]", name, par_name, arr--);
-            else sprintf(tot_name, "%s/%s", name, par_name);
-            model_add_parameter(tot_name, parameters[pindex++], model);
-            free(tot_name);
-        }
-        nindex++;
-    }
-    // Goto variables
-    nindex++;
-    arr = 0;
-    while(definition->names[nindex]!=0){
-        const char * var_name = definition->names[nindex];
-        if((intptr_t) var_name==-1){
-            // TODO implement
-        }else if((intptr_t) var_name==-2){
-            // TODO implement
-        }else if((intptr_t) var_name<32 && (intptr_t)var_name>0){
-            // TODO implement
-        }else{
-            size_t var_name_len = strlen(var_name);
-            // Allocate space for combined name
-            char * tot_name = calloc(var_name_len+strlen(name)+strlen("/")+5, 1);
-            // TODO error handling
-            if(arr) sprintf(tot_name, "%s/%s[%d]", name, var_name, arr--);
-            else sprintf(tot_name, "%s/%s", name, var_name);
-            model_add_variable(tot_name, 0.0, model);
-            free(tot_name);
-        }
-        nindex++;
-    }
-
-    return id;
-}
 
 int model_connect_signals(char * name_out, char * name_in, model_t * model){
     if(!model) return -1;
@@ -370,3 +164,150 @@ int model_connect_signals_named(char * name, char * name_out, char * name_in, mo
 
     return 0;
 }
+
+void model_update(model_t * model){
+    if(!model) return;
+
+    // Loop over all submodels and add/delete input/output ports
+    for(D_ARRAY_LOOP(model_t*, submodel, model->submodels)){
+        // Loop over all inputs
+        for(D_ARRAY_LOOP(int, it, (*submodel)->in)){
+            // Check if input signal is already created
+            signal_t * sig = D_ARRAY_ATP(signal_t, &(*submodel)->signals, *it);
+            char * tot_name = calloc(strlen(sig->name)+strlen((*submodel)->name)+strlen("/")+5, 1);
+            sprintf(tot_name, "%s/%s", (*submodel)->name, sig->name);
+            intptr_t i;
+            if(!hashmap_get(model->hmap, tot_name, strlen(tot_name), &i)){
+                model_add_signal(tot_name, model);
+            }
+            free(tot_name);
+        }
+        // Loop over all output
+        for(D_ARRAY_LOOP(int, it, (*submodel)->out)){
+            // Check if output signal is already created
+            signal_t * sig = D_ARRAY_ATP(signal_t, &(*submodel)->signals, *it);
+            char * tot_name = calloc(strlen(sig->name)+strlen((*submodel)->name)+strlen("/")+5, 1);
+            sprintf(tot_name, "%s/%s", (*submodel)->name, sig->name);
+            intptr_t i;
+            if(!hashmap_get(model->hmap, tot_name, strlen(tot_name), &i)){
+                model_add_signal(tot_name, model);
+            }
+            free(tot_name);
+        }
+    }
+}
+
+int _model_flatten_recur(model_t * in, model_t * out, char * prefix){
+    // Submodels
+    for(D_ARRAY_LOOP(model_t*, it, in->submodels)){
+        char * totname = calloc(strlen((*it)->name) + 1 + strlen(prefix) + 2, 1);
+        sprintf(totname, "%s/%s", prefix, (*it)->name);
+        if(_model_flatten_recur(*it, out, totname)){
+            return -1;
+        }
+        free(totname);
+    }
+
+    // Blocks
+    for(D_ARRAY_LOOP(block_t, it, in->blocks)){
+        char * totname = calloc(strlen(it->name) + 1 + strlen(prefix) + 2, 1);
+        sprintf(totname, "%s/%s", prefix, it->name);
+        double * params = calloc(it->parameters.filled_size, sizeof(double));
+        int cnt = 0;
+        for(D_ARRAY_LOOP(int, i, it->parameters)){
+            params[cnt++] = D_ARRAY_ATV(double, &in->parameters, *i);
+        }
+        model_add_block(totname, it->block_def, params, out);
+        free(totname);
+        free(params);
+    }
+
+    // Signals
+    for(D_ARRAY_LOOP(signal_t, it, in->signals)){
+        char * totname = calloc(strlen(it->name) + 1 + strlen(prefix) + 2, 1);
+        sprintf(totname, "%s/%s", prefix, it->name);
+        intptr_t i;
+        if(!hashmap_get(out->hmap, totname, strlen(totname), &i)){
+            model_add_signal(totname, out);
+        }
+        free(totname);
+    }
+
+    // Parameters
+    for(D_ARRAY_LOOP(parameter_t, it, in->parameters)){
+        char * totname = calloc(strlen(it->name) + 1 + strlen(prefix) + 2, 1);
+        sprintf(totname, "%s/%s", prefix, it->name);
+        intptr_t i;
+        if(!hashmap_get(out->hmap, totname, strlen(totname), &i)){
+            model_add_parameter(totname, it->value, out);
+        }
+        free(totname);
+    }
+
+    // Variables
+    for(D_ARRAY_LOOP(variable_t, it, in->variables)){
+        char * totname = calloc(strlen(it->name) + 1 + strlen(prefix) + 2, 1);
+        sprintf(totname, "%s/%s", prefix, it->name);
+        intptr_t i;
+        if(!hashmap_get(out->hmap, totname, strlen(totname), &i)){
+            model_add_variable(totname, it->value, out);
+        }
+        free(totname);
+    }
+
+    // Connect signals
+    for(D_ARRAY_LOOP(signal_t, it, in->signals)){
+        char * totname = calloc(strlen(it->name) + 1 + strlen(prefix) + 2, 1);
+        sprintf(totname, "%s/%s", prefix, it->name);
+
+        if(it->from_index>=0){
+            signal_t * from = D_ARRAY_ATP(signal_t, &in->signals, it->from_index);
+            char * totfname = calloc(strlen(from->name) + 1 + strlen(prefix) + 2, 1);
+            sprintf(totfname, "%s/%s", prefix, from->name);
+            model_connect_signals(totfname, totname, out);
+            free(totfname);
+        }
+
+        for(D_ARRAY_LOOP(int, to_index, it->to_index)){
+            signal_t * to = D_ARRAY_ATP(signal_t, &in->signals, *to_index);
+            char * tottname = calloc(strlen(to->name) + 1 + strlen(prefix) + 2, 1);
+            sprintf(tottname, "%s/%s", prefix, to->name);
+            model_connect_signals(totname, tottname, out);
+            free(tottname);
+        }
+        
+        free(totname);
+    }
+
+    return 0;
+}
+
+int model_flatten(model_t * in, model_t ** out){
+    if(!in) return -1;
+    if(!out) return -1;
+
+    // Initialze output
+    model_t * flat = model_init(in->name);
+    if(!flat) return -1;
+
+    // Add toplevel inputs and outputs
+    for(D_ARRAY_LOOP(int, it, in->in)){
+        signal_t * sig = D_ARRAY_ATP(signal_t, &in->signals, *it);
+        model_add_signal(sig->name, flat);
+    }
+    for(D_ARRAY_LOOP(int, it, in->out)){
+        signal_t * sig = D_ARRAY_ATP(signal_t, &in->signals, *it);
+        model_add_signal(sig->name, flat);
+    }
+
+    char * prefix = "";
+    if(_model_flatten_recur(in, flat, prefix)){
+        // TODO error handling
+        model_deinit(flat);
+        return -1;
+    }
+
+    *out = flat;
+    return 0;
+}
+
