@@ -234,4 +234,15 @@ int model_flatten(model_t * in, model_t ** out);
  */
 int model_export(model_t * model, const char * fname);
 
+/*
+ * Import
+ * ------
+ *  Import model from file
+ *
+ *  const char * fname : file to read from
+ *  model_t ** model : model object
+ *  -> int : 0 if succeeded, anything else for errors
+ */
+int model_import(const char * fname, model_t ** model);
+
 #endif

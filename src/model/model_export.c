@@ -49,7 +49,7 @@ void _model_export_submodel(model_t * model, FILE * f){
     // model signals
     fprintf(f, "signals %d\n", D_ARRAY_LEN(model->signals));
     for(D_ARRAY_LOOP(signal_t, sig, model->signals)){
-        fprintf(f, "%s %d ", sig->name, sig->from_index);
+        fprintf(f, "%s %d %d ", sig->name, sig->from_index, D_ARRAY_LEN(sig->to_index));
         for(D_ARRAY_LOOP(int, to, sig->to_index)){
             fprintf(f, "%d ", *to);
         }
@@ -82,17 +82,17 @@ void _model_export_submodel(model_t * model, FILE * f){
 
         // Block names
         fprintf(f, "\tnames ");
-        int i = 0;
-        int zerocounter = 0;
-        while(zerocounter<4){
-            if(def->names[i]){
-                fprintf(f, "%s ", def->names[i]);
-            }else{
-                fprintf(f, ", ");
-                zerocounter++;
-            }
-            i++;
-        }
+        /*int i = 0;*/
+        /*int zerocounter = 0;*/
+        /*while(zerocounter<4){*/
+            /*if(def->names[i]){*/
+                /*fprintf(f, "%s ", def->names[i]);*/
+            /*}else{*/
+                /*fprintf(f, ", ");*/
+                /*zerocounter++;*/
+            /*}*/
+            /*i++;*/
+        /*}*/
         fprintf(f, "\n");
     }
 

@@ -62,10 +62,17 @@ int main(int argc, char ** argv){
     model_add_block("gain", &std_gain, (double[]){2.0}, toplevel);
     model_connect_signals("modelA/O", "gain/in", toplevel);
 
-    model_debug(toplevel);
     model_export(toplevel, "testout.model");
 
     model_deinit(toplevel);
+
+    // ----
+
+    model_t * imported_model;
+    model_import("testout.model", &imported_model);
+    model_debug(imported_model);
+    model_export(imported_model, "testout_imported.model");
+    model_deinit(imported_model);
 
     return 0;
 }

@@ -25,7 +25,8 @@ src_model = \
     src/general/base64.c \
     src/model/model.c \
     src/model/model_add.c \
-    src/model/model_export.c
+    src/model/model_export.c \
+    src/model/model_import.c
 
 CFLAGS = -g -fPIC
 LDFLAGS = -g -shared
