@@ -264,6 +264,12 @@ int model_add_submodel(char * name, model_t ** submodel, model_t * model){
         return -1;
     }
 
+    // Reallocate name
+    /*model_t * submdl = D_ARRAY_ATP(model_t, &model->submodels, model->submodels.filled_size-1);*/
+    /*free(submdl->name);*/
+    /*submdl->name = malloc(strlen(name)+1);*/
+    /*strcpy(submdl->name, name);*/
+
     // Add input and output ports as signals to the parent model
     for(D_ARRAY_LOOP(int, it, model->in)){
         signal_t * sig = D_ARRAY_ATP(signal_t, &model->signals, *it);
@@ -279,8 +285,6 @@ int model_add_submodel(char * name, model_t ** submodel, model_t * model){
         model_add_signal(tot_name, model);
         free(tot_name);
     }
-
-
 
     if(!submodel) return model->submodels.filled_size-1;
     *submodel = smod;

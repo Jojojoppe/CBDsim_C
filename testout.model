@@ -1,0 +1,75 @@
+================
+name toplevel
+in 0 
+out 0 
+params 1
+gain/K 2.000000
+variables 0
+signals 3
+modelA/O -1 1 
+gain/in 0 
+gain/out -1 
+blocks 1
+name gain
+	in 0 
+	out 0 
+	params 1 0 
+	variables 0 
+	name std_gain
+	genparams 0 .
+	gen 16 b3V0ID0gSyppbjs=
+	geninit 0 .
+	names in , out , K , , 
+strings 5
+modelA/O 0
+gain 0
+gain/in 1
+gain/out 2
+gain/K 0
+submodules 1
+================
+name modelA
+in 0 
+out 1 0 
+params 3
+src/A 1.000000
+src/f 0.500000
+gain/K 2.500000
+variables 0
+signals 4
+O 3 
+src/out -1 2 
+gain/in 1 
+gain/out -1 0 
+blocks 2
+name src
+	in 0 
+	out 0 
+	params 2 0 1 
+	variables 0 
+	name src_sine
+	genparams 0 .
+	gen 36 b3V0ID0gQSpzaW4oMipNX1BJKmYqdGltZSk7
+	geninit 0 .
+	names , out , A f , , 
+name gain
+	in 0 
+	out 0 
+	params 1 2 
+	variables 0 
+	name std_gain
+	genparams 0 .
+	gen 16 b3V0ID0gSyppbjs=
+	geninit 0 .
+	names in , out , K , , 
+strings 9
+O 0
+src 0
+src/out 1
+src/A 0
+src/f 1
+gain 1
+gain/in 2
+gain/out 3
+gain/K 2
+submodules 0

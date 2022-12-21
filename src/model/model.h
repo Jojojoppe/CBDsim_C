@@ -51,7 +51,8 @@ typedef struct{
 
 // Equations generating types
 // --------------------------
-typedef int (*equations_gen_f)(FILE * fout, void * data);
+//typedef int (*equations_gen_f)(FILE * fout, void * data);
+typedef char * equations_gen_f;
 
 typedef struct block_definition_s{
     char * type;        // Name of the type of the block
@@ -221,5 +222,16 @@ void model_update(model_t * model);
  *  -> int : 0 if succeeded, anything else for errors
  */
 int model_flatten(model_t * in, model_t ** out);
+
+/*
+ * Export
+ * ------
+ *  Export model to file
+ *
+ *  model_t * model
+ *  const char * fname : file to write to
+ *  -> int : 0 if succeeded, anything else for errors
+ */
+int model_export(model_t * model, const char * fname);
 
 #endif

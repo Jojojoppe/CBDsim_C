@@ -114,6 +114,11 @@ void model_debug(model_t * model){
     for(D_ARRAY_LOOP(block_t, it, model->blocks)){
         printf("\t%s [-> %s]\n", it->name, it->block_def->type);
     }
+
+    printf("Submodels:\n");
+    for(D_ARRAY_LOOP(model_t*, it, model->submodels)){
+        printf("\t%s\n", (*it)->name);
+    }
 }
 
 

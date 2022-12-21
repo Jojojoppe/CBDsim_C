@@ -22,8 +22,10 @@ LDLIBS = -lm -ldl
 src_model = \
     src/general/hashmap.c \
     src/general/dynamic_array.c \
+    src/general/base64.c \
     src/model/model.c \
-    src/model/model_add.c
+    src/model/model_add.c \
+    src/model/model_export.c
 
 CFLAGS = -g -fPIC
 LDFLAGS = -g -shared
